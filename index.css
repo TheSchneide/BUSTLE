@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&display=swap');
+
+body{
+    font-family: sans-serif;
+    background: #FFD93D;
+    margin: 0;
+}
+
+.Navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    position: relative;
+    text-decoration: none;
+    color: black;
+}
+
+.Navigation a{
+    text-decoration: none;
+    color: #4F200D  ;
+}
+
+.logo{
+    font-family: Caprasimo;
+    font-size: 3rem;
+}
