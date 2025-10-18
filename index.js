@@ -1,3 +1,4 @@
+//css for loading
 window.addEventListener("load", () => {
     const loader = document.getElementById("loading-screen");
     setTimeout(() => {
@@ -26,7 +27,7 @@ window.addEventListener("load", () => {
     animateText();
   }, 500);
 });
-
+//animation
 function animateText() {
   const elements = document.querySelectorAll(".hidden-text");
   elements.forEach((el, i) => {
@@ -37,4 +38,4 @@ function animateText() {
     }, i * 200); // delay between each element
   });
 }
-
+//loading end-----
