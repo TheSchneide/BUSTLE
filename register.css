@@ -306,9 +306,10 @@ form {
 .toggle-panel .btn{
     width: 160px;
     height: 46px;
-    background: transparent;
+    background: #fff;
     border: 2px solid #fff;
     border-radius: 20px;
     box-shadow: none;
-    color: #fff;
+    color: #4F200D;
+    font-weight: bold;
 }

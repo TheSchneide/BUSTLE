@@ -132,9 +132,11 @@ hr {
     gap: 2rem;
     font-size: 20px;
     align-items: center;
-    font-weight: bolder;
 }
 
+.Home{
+  font-weight: bolder;
+}
 
 .SignUp {
     background: white;
