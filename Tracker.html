@@ -45,6 +45,14 @@
                 attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
             L.marker([latitude, longitude]).addTo(map);
+            var busIcon = L.icon({
+                iconUrl: 'busIcon.png',
+                iconSize:     [100, 95], // size of the icon
+                iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
+                popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+            });
+            L.marker([10.3315, 123.90643], {icon: busIcon}).addTo(map);
+            L.marker([10.307905, 124.0105], {icon: busIcon}).addTo(map);
         });
     </script>
     </body>

@@ -312,4 +312,14 @@ form {
     box-shadow: none;
     color: #4F200D;
     font-weight: bold;
+    transition: 0.3s ease;
+}
+
+
+.toggle-panel .btn:hover{
+    cursor: pointer;
+    border: 2px solid #dddddd;
+    background: #dddddd;
+    color: #5e2610;
+    transition: 0.3s ease;
 }
