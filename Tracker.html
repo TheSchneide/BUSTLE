@@ -36,24 +36,103 @@
         <a href="">+091234567</a>
     </footer>
     <script>
-        navigator.geolocation.getCurrentPosition((position)=>{
-            let {latitude,longitude} = position.coords;
-            var map = L.map('map').setView([latitude, longitude], 19);
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                minZoom: 1,
-                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            }).addTo(map);
-            L.marker([latitude, longitude]).addTo(map);
-            var busIcon = L.icon({
-                iconUrl: 'busIcon.png',
-                iconSize:     [100, 95], // size of the icon
-                iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
-                popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
-            });
-            L.marker([10.3315, 123.90643], {icon: busIcon}).addTo(map);
-            L.marker([10.307905, 124.0105], {icon: busIcon}).addTo(map);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        let { latitude, longitude } = position.coords;
+
+        var map = L.map('map').setView([latitude, longitude], 13);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // Mark user's current location
+        L.marker([latitude, longitude]).addTo(map).bindPopup("You are here").openPopup();
+
+        // Bus icon
+        var busIcon = L.icon({
+            iconUrl: 'busIcon.png',
+            iconSize: [100, 95],
+            iconAnchor: [22, 94],
+            popupAnchor: [-3, -76]
         });
+
+        // Example bus location
+        var bus = [10.3315, 123.90643];
+
+        // Example bus stops (ordered by route)
+        var stops = [
+            [10.32853, 123.9088],
+            [10.33941, 123.9115],
+            [10.354847, 123.914696],
+            [10.3519, 123.9138],
+            [10.360, 123.9165],
+            [10.354636, 123.921072],
+            [10.352872, 123.922684],
+            [10.350284, 123.924797],
+            [10.349241, 123.925624],
+            [10.347291, 123.928041],
+            [10.346524, 123.929341],
+            [10.345279, 123.930602],
+            [10.342883, 123.932878],
+            [10.340230, 123.935520],
+            [10.338017, 123.937100],
+            [10.335997, 123.938579]
+        ];
+
+        // Find nearest stop to the user
+        let nearestStop = stops[0];
+        let minDist = Infinity;
+        stops.forEach(stop => {
+            const d = map.distance(stop, [latitude, longitude]);
+            if (d < minDist) {
+                minDist = d;
+                nearestStop = stop;
+            }
+        });
+
+        // Show all stops
+        stops.forEach(stop => {
+            L.circleMarker(stop, { color: 'green' })
+                .addTo(map)
+                .bindPopup("Bus Stop");
+        });
+
+        // Fetch route: Bus → Nearest Stop
+        const url = `https://router.project-osrm.org/route/v1/driving/${bus[1]},${bus[0]};${nearestStop[1]},${nearestStop[0]}?overview=full&geometries=geojson`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+            const route = data.routes[0];
+            const distance = route.distance; // meters
+            const duration = route.duration; // seconds
+            const etaMinutes = (duration / 60).toFixed(1);
+
+            // Draw the route (bus to stop)
+            L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4 } }).addTo(map);
+
+            // Mark the bus
+            L.marker(bus, { icon: busIcon })
+                .addTo(map)
+                .bindPopup(`Next stop ETA: ${etaMinutes} min<br>Distance: ${(distance / 1000).toFixed(2)} km`)
+                .openPopup();
+
+            // Draw small route from stop to user (optional)
+            const stopToUserURL = `https://router.project-osrm.org/route/v1/driving/${nearestStop[1]},${nearestStop[0]};${longitude},${latitude}?overview=full&geometries=geojson`;
+            const stopToUserResp = await fetch(stopToUserURL);
+            const stopToUserData = await stopToUserResp.json();
+
+            if (stopToUserData.routes && stopToUserData.routes.length > 0) {
+                L.geoJSON(stopToUserData.routes[0].geometry, {
+                    style: { color: 'orange', dashArray: '4 8' }
+                }).addTo(map);
+            }
+        }
+    });
     </script>
+
+
     </body>
 </html>
