@@ -60,7 +60,7 @@
         // Example bus location
         var bus = [10.3315, 123.90643];
 
-        // Example bus stops (ordered by route)
+        // Ordered bus stops
         var stops = [
             [10.32853, 123.9088],
             [10.33941, 123.9115],
@@ -98,28 +98,32 @@
                 .bindPopup("Bus Stop");
         });
 
-        // Fetch route: Bus → Nearest Stop
-        const url = `https://router.project-osrm.org/route/v1/driving/${bus[1]},${bus[0]};${nearestStop[1]},${nearestStop[0]}?overview=full&geometries=geojson`;
+        // Build coordinates for full route: bus → all stops → nearest stop
+        let waypoints = [bus, ...stops, nearestStop];
+
+        // OSRM expects coordinates as lng,lat
+        let coords = waypoints.map(p => `${p[1]},${p[0]}`).join(';');
+        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.routes && data.routes.length > 0) {
             const route = data.routes[0];
-            const distance = route.distance; // meters
-            const duration = route.duration; // seconds
+            const distance = route.distance;
+            const duration = route.duration;
             const etaMinutes = (duration / 60).toFixed(1);
 
-            // Draw the route (bus to stop)
+            // Draw the full bus route (through all stops)
             L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4 } }).addTo(map);
 
             // Mark the bus
             L.marker(bus, { icon: busIcon })
                 .addTo(map)
-                .bindPopup(`Next stop ETA: ${etaMinutes} min<br>Distance: ${(distance / 1000).toFixed(2)} km`)
+                .bindPopup(`Final stop ETA: ${etaMinutes} min<br>Distance: ${(distance / 1000).toFixed(2)} km`)
                 .openPopup();
 
-            // Draw small route from stop to user (optional)
+            // Optional: route from user's nearest stop to their exact location (dotted line)
             const stopToUserURL = `https://router.project-osrm.org/route/v1/driving/${nearestStop[1]},${nearestStop[0]};${longitude},${latitude}?overview=full&geometries=geojson`;
             const stopToUserResp = await fetch(stopToUserURL);
             const stopToUserData = await stopToUserResp.json();
@@ -132,6 +136,7 @@
         }
     });
     </script>
+
 
 
     </body>
