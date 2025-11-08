@@ -38,6 +38,7 @@
         <a href="">BustleCrew@gmail.com</a>
         <a href="">+091234567</a>
     </footer>
+
     <script>
         navigator.geolocation.getCurrentPosition(async (position) => {
             let { latitude, longitude } = position.coords;
@@ -89,7 +90,6 @@
                 [10.311924, 124.005914],
                 [10.310542, 124.009324],
                 [10.308596, 124.010744]
-
             ];
 
             const arrivalThreshold = 20;
@@ -102,7 +102,7 @@
                     .bindPopup("Bus Stop");
             });
 
-            // Highlight nearest stop to user
+            // Find nearest stop to user
             const nearestStop = stops.reduce((prev, curr) => {
                 return map.distance(curr, [latitude, longitude]) < map.distance(prev, [latitude, longitude]) ? curr : prev;
             });
@@ -112,6 +112,27 @@
                 .bindPopup("Nearest Bus Stop to You")
                 .openPopup();
 
+            // Draw walking route from user to nearest stop
+            const walkingRouteURL = `https://router.project-osrm.org/route/v1/foot/${longitude},${latitude};${nearestStop[1]},${nearestStop[0]}?overview=full&geometries=geojson`;
+            const walkingResp = await fetch(walkingRouteURL);
+            const walkingData = await walkingResp.json();
+
+            if (walkingData.routes && walkingData.routes.length > 0) {
+                const walkingRoute = walkingData.routes[0];
+
+                // Convert seconds → minutes and adjust for realistic walking pace (1.4x slower)
+                const walkingTimeMinutes = ((walkingRoute.duration * 1.4) / 60).toFixed(1);
+
+                L.geoJSON(walkingRoute.geometry, {
+                    style: { color: 'purple', weight: 4, dashArray: '5,10' }
+                }).addTo(map)
+                    .bindPopup(`Walking route to nearest stop: ${walkingTimeMinutes} min`)
+                    .openPopup();
+            }
+
+
+
+            // Fetch and update bus positions + routes
             async function updateBuses() {
                 const response = await fetch('get_buses.php');
                 const buses = await response.json();
@@ -137,12 +158,11 @@
                         busMarkers[bus.bus_id] = L.marker(busPos, { icon: busIcon }).addTo(map);
                     }
 
-                    // Stops between bus and nearest stop (distance from bus < distance from nearest stop)
+                    // Filter stops between bus and user's nearest stop
                     const stopsToRoute = stops.filter(stop => {
                         const distBusToStop = map.distance(busPos, stop);
                         const distStopToNearest = map.distance(stop, nearestStop);
                         const distBusToNearest = map.distance(busPos, nearestStop);
-                        // Only include stops ahead of the bus on the way to nearest stop
                         return distBusToStop < distBusToNearest && distStopToNearest < distBusToNearest;
                     });
 
@@ -168,27 +188,18 @@
                         // Update popup with ETA
                         const etaMinutes = (route.duration / 60).toFixed(1);
                         busMarkers[bus.bus_id].bindPopup(`
-                <b>Bus Plate:</b> ${bus.plate_number}<br>
-                <b>Route:</b> ${bus.route || 'N/A'}<br>
-                ETA to nearest stop: ${etaMinutes} min
-            `);
+                            <b>Bus Plate:</b> ${bus.plate_number}<br>
+                            <b>Route:</b> ${bus.route || 'N/A'}<br>
+                            ETA to nearest stop: ${etaMinutes} min
+                        `);
                     }
                 }
             }
 
-
-
             updateBuses();
             setInterval(updateBuses, 5000); // refresh every 5 seconds
         });
-
-
-
     </script>
-
-
-
-
 </body>
 
 </html>
