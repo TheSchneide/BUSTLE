@@ -72,7 +72,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
     </section>
 
     <footer>
-        <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
+        <a href="index.php" class="hidden-text" data-anim="fade-up">@bustle.dcism.org</a>
         <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
         <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
     </footer>
