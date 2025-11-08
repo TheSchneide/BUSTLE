@@ -77,12 +77,14 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
         width: 100%;
         overflow: hidden;
         max-height: 0;
-        transition: max-height 0.4s ease;
+        transition: 0.4s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.15);
       }
 
       #navBar.active {
         max-height: 300px; /* smooth dropdown */
+        padding-top: 20px;
+        padding-bottom: 20px;
       }
 
       .menu-toggle {
