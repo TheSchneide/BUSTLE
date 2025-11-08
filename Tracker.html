@@ -59,11 +59,11 @@
             });
 
             const stops = [
-                [10.32853, 123.9088],
-                [10.33941, 123.9115],
+                [10.32853, 123.9089],
+                [10.33941, 123.9116],
                 [10.354847, 123.914696],
-                [10.3519, 123.9138],
-                [10.360, 123.9165],
+                [10.3519, 123.91386],
+                [10.36, 123.91653],
                 [10.354636, 123.921072],
                 [10.352872, 123.922684],
                 [10.350284, 123.924797],
@@ -76,9 +76,9 @@
                 [10.338017, 123.937100],
                 [10.335997, 123.938579],
                 [10.338196, 123.944092],
-                [10.340796, 123.949414],
-                [10.339409, 123.953279],
-                [10.333641, 123.961368],
+                [10.340796, 123.949214],
+                [10.339409, 123.953100],
+                [10.333641, 123.961298],
                 [10.323553, 123.972286],
                 [10.326384, 123.977480],
                 [10.331931, 123.987888],
@@ -137,14 +137,17 @@
                         busMarkers[bus.bus_id] = L.marker(busPos, { icon: busIcon }).addTo(map);
                     }
 
-                    // Stops ahead of the bus
-                    const stopsAhead = stops.filter(stop =>
-                        map.distance(busPos, stop) > 0 &&
-                        map.distance(stop, nearestStop) < map.distance(busPos, nearestStop)
-                    );
+                    // Stops between bus and nearest stop (distance from bus < distance from nearest stop)
+                    const stopsToRoute = stops.filter(stop => {
+                        const distBusToStop = map.distance(busPos, stop);
+                        const distStopToNearest = map.distance(stop, nearestStop);
+                        const distBusToNearest = map.distance(busPos, nearestStop);
+                        // Only include stops ahead of the bus on the way to nearest stop
+                        return distBusToStop < distBusToNearest && distStopToNearest < distBusToNearest;
+                    });
 
-                    // Build route from bus → stopsAhead → nearestStop
-                    const routePoints = [busPos, ...stopsAhead, nearestStop];
+                    // Build route: bus → filtered stops → nearest stop
+                    const routePoints = [busPos, ...stopsToRoute, nearestStop];
                     const coords = routePoints.map(p => `${p[1]},${p[0]}`).join(';');
                     const routeURL = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
@@ -172,6 +175,7 @@
                     }
                 }
             }
+
 
 
             updateBuses();
