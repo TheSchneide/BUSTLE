@@ -14,6 +14,91 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
 
     <style>
        @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
+       .menu-toggle {
+           display: none;
+           flex-direction: column;
+           justify-content: space-between;
+           width: 25px;
+           height: 18px;
+           cursor: pointer;
+       }
+       .menu-toggle span {
+           display: block;
+           height: 3px;
+           width: 100%;
+           background-color: #333;
+           border-radius: 2px;
+       }
+
+       @media (max-width: 768px) {
+           .Navigation {
+               display: flex;
+               justify-content: space-between;
+               align-items: center;
+               padding: 10px 20px;
+           }
+
+           #navBar {
+               display: none;
+               position: absolute;
+               top: 60px;
+               right: 0;
+               width: 100%;
+               background-color: white;
+               flex-direction: column;
+               align-items: center;
+               text-align: center;
+               gap: 15px;
+               padding: 20px 0;
+               box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+               z-index: 1000;
+           }
+
+           #navBar.active {
+               display: flex;
+           }
+
+           .menu-toggle {
+               display: flex;
+           }
+
+           .Content {
+               padding: 40px 20px;
+               text-align: center;
+           }
+
+           .Content img {
+               width: 80%;
+               height: auto;
+           }
+
+           .info {
+               flex-direction: column;
+               align-items: center;
+               text-align: center;
+               padding: 20px;
+           }
+
+           .info-text, .info-img {
+               width: 100%;
+           }
+
+           .info-img img {
+               width: 90%;
+               height: auto;
+           }
+
+           .aboutUs {
+               padding: 40px 20px;
+           }
+
+           footer {
+               flex-direction: column;
+               gap: 8px;
+               padding: 15px 0;
+           }
+       }
     </style>
 </head>
 <body>
@@ -25,6 +110,13 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
             <div id="logo" class="hidden-text" data-anim="fade-up">
                 <a href="index.php">Bustle</a>
             </div>
+
+            <div class="menu-toggle" id="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
             <div id="navBar" class="hidden-text" data-anim="fade-up">
                 <a href="index.php" class="Home">Home</a>
                 <a href="Tracker.html" class="tracker">Tracker</a>
@@ -72,9 +164,17 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
     </section>
 
     <footer>
-        <a href="index.php" class="hidden-text" data-anim="fade-up">@bustle.dcism.org</a>
+        <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
         <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
         <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
     </footer>
+
+    <script>
+        const toggle = document.getElementById('menu-toggle');
+        const navBar = document.getElementById('navBar');
+        toggle.addEventListener('click', () => {
+            navBar.classList.toggle('active');
+        });
+    </script>
 </body>
 </html>
