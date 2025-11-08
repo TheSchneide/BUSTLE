@@ -24,15 +24,6 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    .Navigation {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      position: relative;
-      z-index: 1001;
-    }
-
     /* Hamburger icon */
     .menu-toggle {
       display: none;
