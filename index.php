@@ -142,7 +142,6 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
         <a href="Tracker.html" class="tracker">Tracker</a>
 
         <?php if($isLoggedIn): ?>
-          <span>Welcome, <?php echo htmlspecialchars($username); ?>!</span>
           <a href="logout.php">Logout</a>
         <?php else: ?>
           <a href="login.html">Login</a>
@@ -153,8 +152,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   </header>
 
   <div class="Content">
-    <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
-    <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
+    <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span> </h2>
     <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
   </div>
 
