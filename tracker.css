@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Outfit;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  display: flex;
+  flex-direction: column; /* nav above map */
+  /* allow header to grow so map can fill remaining space */
+  flex: 1 1 auto;
+  min-height: 0; /* critical so children can shrink in some browsers */
+}
+
+.Navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 30px;
+  background: #FF9A00;
+  color: black;
+  flex-shrink: 0;
+}
+
+.Navigation a {
+  text-decoration: none;
+  color: #4F200D;
+}
+
+#logo {
+  font-family: Caprasimo;
+  font-size: 2.5rem;
+}
+
+#navBar {
+  display: flex;
+  gap: 2rem;
+  font-size: 18px;
+  align-items: center;
+}
+
+.tracker {
+  background: white;
+  border-radius: 5rem;
+  padding: 0.5rem 1.2rem;
+  font-weight: bolder;
+}
+
+/* ✅ The flexible map container */
+#map {
+  flex-grow: 1; /* takes all remaining space */
+  width: 100%;
+  min-height: 300px; /* fallback for very small screens */
+}
+
+/* ✅ Footer stays visible and consistent */
+footer {
+  flex-shrink: 0;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 15px;
+}
+
+footer a {
+  text-decoration: none;
+  color: #4F200D;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+/* ✅ Responsive text tweaks */
+@media (max-width: 768px) {
+  #logo {
+    font-size: 2rem;
+  }
+
+  #navBar {
+    gap: 1rem;
+    font-size: 16px;
+  }
+
+  footer {
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+  }
+}

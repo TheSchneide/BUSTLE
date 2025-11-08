@@ -128,7 +128,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   <header>
     <div class="Navigation">
       <div id="logo" class="hidden-text" data-anim="fade-up">
-        <a href="index.php">Bustle</a>
+        <a href="#index.php">Bustle</a>
       </div>
 
       <div class="menu-toggle" id="menu-toggle">
@@ -138,12 +138,13 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       </div>
 
       <div id="navBar" class="hidden-text" data-anim="fade-up">
-        <a href="index.php" class="Home">Home</a>
-        <a href="Tracker.html" class="tracker">Tracker</a>
+        <a href="#index.php" class="Home">Home</a>
 
         <?php if($isLoggedIn): ?>
+          <a href="Tracker.html" class="tracker">Tracker</a>
           <a href="logout.php">Logout</a>
         <?php else: ?>
+          <a href="login.html" class="tracker">Tracker</a>
           <a href="login.html">Login</a>
           <a href="Register.html" class="SignUp">Sign Up</a>
         <?php endif; ?>
