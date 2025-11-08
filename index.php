@@ -1,3 +1,8 @@
+<?php
+session_start();
+$isLoggedIn = isset($_SESSION['user_id']);
+$username = $isLoggedIn ? $_SESSION['username'] : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,52 +23,56 @@
     <header>
         <div class="Navigation">
             <div id="logo" class="hidden-text" data-anim="fade-up">
-                <a href="index.html">Bustle</a>
+                <a href="index.php">Bustle</a>
             </div>
             <div id="navBar" class="hidden-text" data-anim="fade-up">
                 <a href="index.php" class="Home">Home</a>
-                <a href="Tracker.php" class="tracker">Tracker</a>
+                <a href="Tracker.html" class="tracker">Tracker</a>
 
                 <?php if($isLoggedIn): ?>
                     <span>Welcome, <?php echo htmlspecialchars($username); ?>!</span>
                     <a href="logout.php">Logout</a>
                 <?php else: ?>
-                    <a href="login.php">Login</a>
-                    <a href="Register.php" class="SignUp">Sign Up</a>
+                    <a href="login.html">Login</a>
+                    <a href="Register.html" class="SignUp">Sign Up</a>
                 <?php endif; ?>
             </div>
-
         </div>
-        </header>
+    </header>
+
     <div class="Content">
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
         <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
         <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
     </div>
+
     <section class="info">
-    <div class="info-text">
-        <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
-        <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
-        <p class="hidden-text" data-anim="fade-left"> 
-        Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
-        running around looking for buses, students can track arrivals in real time.
-        </p>
-    </div>
-    <div class="info-img">
-        <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
-    </div>
+        <div class="info-text">
+            <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
+            <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
+            <p class="hidden-text" data-anim="fade-left"> 
+                Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
+                running around looking for buses, students can track arrivals in real time.
+            </p>
+        </div>
+        <div class="info-img">
+            <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
+        </div>
     </section>
+
     <hr class="hidden-text" data-anim="fade-up">
+
     <section class="aboutUs">
         <div class="about">
-        <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
-        <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
-        <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
+            <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
+            <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
+            <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
             take—saving time, reducing stress, and making sure you never miss class again</p>
-    </div>
+        </div>
     </section>
+
     <footer>
-        <a href="index.html" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
+        <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
         <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
         <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
     </footer>

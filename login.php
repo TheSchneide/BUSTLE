@@ -2,12 +2,17 @@
 include 'db_connect.php';
 session_start();
 
+header('Content-Type: application/json');
+
+$response = ['status'=>'', 'message'=>''];
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = trim($_POST['email']);
+    $username = trim($_POST['username']); // Get username from form
     $password = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $stmt->bind_param("s", $email);
+    // Prepare query using correct variable
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username); // bind $username, not $email
     $stmt->execute();
     $result = $stmt->get_result();
 
@@ -16,19 +21,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['username'] = $user['username'];
-
-            // Redirect to index after successful login
-            header("Location: index.html");
-            exit();
+            $response['status'] = 'success';
+            $response['message'] = 'Login successful!';
         } else {
-            // Redirect back to login page with error
-            header("Location: login.php?error=invalid_password");
-            exit();
+            $response['status'] = 'error';
+            $response['message'] = 'Invalid password!';
         }
     } else {
-        // Redirect back to login page with error
-        header("Location: login.php?error=user_not_found");
-        exit();
+        $response['status'] = 'error';
+        $response['message'] = 'User not found!';
     }
 }
-?>
+
+echo json_encode($response);
