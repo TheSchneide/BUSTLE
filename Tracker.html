@@ -57,10 +57,7 @@
             popupAnchor: [-3, -76]
         });
 
-        // Example bus location
-        var bus = [10.3315, 123.90643];
-
-        // Ordered bus stops
+        // Bus stops (ordered)
         var stops = [
             [10.32853, 123.9088],
             [10.33941, 123.9115],
@@ -80,6 +77,13 @@
             [10.335997, 123.938579]
         ];
 
+        // Show all stops
+        stops.forEach(stop => {
+            L.circleMarker(stop, { color: 'green' })
+                .addTo(map)
+                .bindPopup("Bus Stop");
+        });
+
         // Find nearest stop to the user
         let nearestStop = stops[0];
         let minDist = Infinity;
@@ -91,51 +95,60 @@
             }
         });
 
-        // Show all stops
-        stops.forEach(stop => {
-            L.circleMarker(stop, { color: 'green' })
-                .addTo(map)
-                .bindPopup("Bus Stop");
-        });
+        L.circleMarker(nearestStop, { color: 'orange' })
+            .addTo(map)
+            .bindPopup("Nearest Bus Stop to You")
+            .openPopup();
 
-        // Build coordinates for full route: bus → all stops → nearest stop
-        let waypoints = [bus, ...stops, nearestStop];
+        // Fetch all buses from backend
+        const busResponse = await fetch('get_buses.php');
+        const buses = await busResponse.json();
 
-        // OSRM expects coordinates as lng,lat
-        let coords = waypoints.map(p => `${p[1]},${p[0]}`).join(';');
-        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+        for (let bus of buses) {
+            if (!bus.latitude || !bus.longitude) continue;
 
-        const response = await fetch(url);
-        const data = await response.json();
+            const busPos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
 
-        if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const distance = route.distance;
-            const duration = route.duration;
-            const etaMinutes = (duration / 60).toFixed(1);
+            // Build route: bus → all stops → nearest stop
+            let waypoints = [busPos, ...stops, nearestStop];
+            let coords = waypoints.map(p => `${p[1]},${p[0]}`).join(';');
+            const routeURL = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
 
-            // Draw the full bus route (through all stops)
-            L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4 } }).addTo(map);
+            const routeResp = await fetch(routeURL);
+            const routeData = await routeResp.json();
 
-            // Mark the bus
-            L.marker(bus, { icon: busIcon })
-                .addTo(map)
-                .bindPopup(`Final stop ETA: ${etaMinutes} min<br>Distance: ${(distance / 1000).toFixed(2)} km`)
-                .openPopup();
+            if (routeData.routes && routeData.routes.length > 0) {
+                const route = routeData.routes[0];
+                const etaMinutes = (route.duration / 60).toFixed(1);
 
-            // Optional: route from user's nearest stop to their exact location (dotted line)
-            const stopToUserURL = `https://router.project-osrm.org/route/v1/driving/${nearestStop[1]},${nearestStop[0]};${longitude},${latitude}?overview=full&geometries=geojson`;
-            const stopToUserResp = await fetch(stopToUserURL);
-            const stopToUserData = await stopToUserResp.json();
+                // Draw bus route
+                L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4 } }).addTo(map);
 
-            if (stopToUserData.routes && stopToUserData.routes.length > 0) {
-                L.geoJSON(stopToUserData.routes[0].geometry, {
-                    style: { color: 'orange', dashArray: '4 8' }
-                }).addTo(map);
+                // Place bus marker
+                L.marker(busPos, { icon: busIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b>Bus Plate:</b> ${bus.plate_number}<br>
+                        <b>Route:</b> ${bus.route || 'N/A'}<br>
+                        ETA to final stop: ${etaMinutes} min
+                    `)
+                    .openPopup();
+
+                // Optional: route from nearest stop to user (dotted)
+                const stopToUserURL = `https://router.project-osrm.org/route/v1/driving/${nearestStop[1]},${nearestStop[0]};${longitude},${latitude}?overview=full&geometries=geojson`;
+                const stopToUserResp = await fetch(stopToUserURL);
+                const stopToUserData = await stopToUserResp.json();
+
+                if (stopToUserData.routes && stopToUserData.routes.length > 0) {
+                    L.geoJSON(stopToUserData.routes[0].geometry, {
+                        style: { color: 'orange', dashArray: '4 8' }
+                    }).addTo(map);
+                }
             }
         }
     });
     </script>
+
 
 
 

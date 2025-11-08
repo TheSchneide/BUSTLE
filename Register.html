@@ -23,18 +23,18 @@
         </div>
         <div id="container" class="hidden-text" data-anim="fade-up">
             <div class="form-box loginBox">
-                <form action="#">
+                <form action="register.php" method="POST">
                     <h1>Registration</h1>
                     <div class="inputBox">
-                        <input type="text" placeholder="Username" required>
+                        <input type="text" name="username" placeholder="Username" required>
                         <i class="fa-solid fa-user"></i>
                     </div>
                     <div class="inputBox">
-                        <input type="email" placeholder="Email" required>
+                        <input type="email" name="email" placeholder="Email" required>
                         <i class="fa-solid fa-envelope"></i>
                     </div>
                     <div class="inputBox">
-                        <input type="password" placeholder="Password" required>
+                        <input type="password" name="password" placeholder="Password" required>
                         <i class="fa-solid fa-lock"></i>
                     </div>
                     <button type="submit" class="submitBtn">Register</button>
@@ -71,6 +71,8 @@
                         <a href=""><i class="fa-brands fa-github"></i></a>
                     </div>
                 </form>
+                <div id="popupMessage"></div>
+                
             </div>
             <div class="toggleBox">
                 <div class="toggle-panel toggle-left">
@@ -86,5 +88,47 @@
             </div>
         </div>
     </section>
+    <script>
+// Get the form and popup container
+const form = document.querySelector('form[action="register.php"]');
+const popup = document.createElement('div');
+popup.id = 'popupMessage';
+document.body.appendChild(popup);
+
+// Handle form submission
+form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // prevent normal submission
+
+    const formData = new FormData(form);
+
+    const response = await fetch('register.php', {
+        method: 'POST',
+        body: formData
+    });
+
+    const data = await response.json();
+
+    // Show popup
+    popup.textContent = data.message;
+    popup.className = ''; // reset classes
+    popup.classList.add(data.status, 'show');
+
+    // Hide popup after 3 seconds
+    setTimeout(() => {
+        popup.classList.remove('show');
+
+        // Redirect to index.html if registration succeeded
+        if (data.status === 'success') {
+            window.location.href = 'index.html';
+        }
+    }, 1500);
+
+    // Optionally clear form on success
+    if (data.status === 'success') {
+        form.reset();
+    }
+});
+</script>
+
     </body>
 </html>

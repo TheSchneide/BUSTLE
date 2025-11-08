@@ -323,3 +323,26 @@ form {
     color: #5e2610;
     transition: 0.3s ease;
 }
+
+#popupMessage {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background-color: #f44336; /* red by default */
+    color: white;
+    font-family: Arial, sans-serif;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: all 0.5s ease;
+}
+
+#popupMessage.success { background-color: #4CAF50; } /* green for success */
+#popupMessage.error { background-color: #f44336; }  /* red for errors */
+#popupMessage.show {
+    display: block;
+    opacity: 1;
+}
