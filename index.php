@@ -6,175 +6,204 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bustle</title>
-    <link rel="stylesheet" href="index.css">
-    <script src="index.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bustle</title>
+  <link rel="stylesheet" href="index.css">
+  <script src="index.js" defer></script>
 
-    <style>
-       @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-       .menu-toggle {
-           display: none;
-           flex-direction: column;
-           justify-content: space-between;
-           width: 25px;
-           height: 18px;
-           cursor: pointer;
-       }
-       .menu-toggle span {
-           display: block;
-           height: 3px;
-           width: 100%;
-           background-color: #333;
-           border-radius: 2px;
-       }
+    /* ✅ Responsive dropdown below header */
 
-       @media (max-width: 768px) {
-           .Navigation {
-               display: flex;
-               justify-content: space-between;
-               align-items: center;
-               padding: 10px 20px;
-           }
+    header {
+      position: relative;
+      z-index: 1000;
+      background-color: #fff; /* keep original theme color */
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
 
-           #navBar {
-               display: none;
-               position: absolute;
-               top: 60px;
-               right: 0;
-               width: 100%;
-               background-color: white;
-               flex-direction: column;
-               align-items: center;
-               text-align: center;
-               gap: 15px;
-               padding: 20px 0;
-               box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-               z-index: 1000;
-           }
+    .Navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      position: relative;
+      z-index: 1001;
+    }
 
-           #navBar.active {
-               display: flex;
-           }
+    /* Hamburger icon */
+    .menu-toggle {
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      width: 25px;
+      height: 18px;
+      cursor: pointer;
+      z-index: 1101;
+    }
+    .menu-toggle span {
+      display: block;
+      height: 3px;
+      width: 100%;
+      background-color: #333;
+      border-radius: 2px;
+      transition: all 0.3s ease;
+    }
 
-           .menu-toggle {
-               display: flex;
-           }
+    /* Animate hamburger → X */
+    .menu-toggle.active span:nth-child(1) {
+      transform: rotate(45deg) translate(4px, 4px);
+    }
+    .menu-toggle.active span:nth-child(2) {
+      opacity: 0;
+    }
+    .menu-toggle.active span:nth-child(3) {
+      transform: rotate(-45deg) translate(4px, -4px);
+    }
 
-           .Content {
-               padding: 40px 20px;
-               text-align: center;
-           }
+    /* Dropdown menu */
+    @media (max-width: 768px) {
+      #navBar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background-color: white;
+        position: absolute;
+        top: 100%; /* ✅ starts below header */
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.4s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      }
 
-           .Content img {
-               width: 80%;
-               height: auto;
-           }
+      #navBar.active {
+        max-height: 300px; /* smooth dropdown */
+      }
 
-           .info {
-               flex-direction: column;
-               align-items: center;
-               text-align: center;
-               padding: 20px;
-           }
+      .menu-toggle {
+        display: flex;
+      }
 
-           .info-text, .info-img {
-               width: 100%;
-           }
+      .Content {
+        padding: 40px 20px;
+        text-align: center;
+      }
 
-           .info-img img {
-               width: 90%;
-               height: auto;
-           }
+      .Content img {
+        width: 80%;
+        height: auto;
+      }
 
-           .aboutUs {
-               padding: 40px 20px;
-           }
+      .info {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 20px;
+      }
 
-           footer {
-               flex-direction: column;
-               gap: 8px;
-               padding: 15px 0;
-           }
-       }
-    </style>
+      .info-text, .info-img {
+        width: 100%;
+      }
+
+      .info-img img {
+        width: 90%;
+        height: auto;
+      }
+
+      .aboutUs {
+        padding: 40px 20px;
+      }
+
+      footer {
+        flex-direction: column;
+        gap: 8px;
+        padding: 15px 0;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div id="loading-screen">
-        <div class="loading"></div>
+  <div id="loading-screen">
+    <div class="loading"></div>
+  </div>
+
+  <header>
+    <div class="Navigation">
+      <div id="logo" class="hidden-text" data-anim="fade-up">
+        <a href="index.php">Bustle</a>
+      </div>
+
+      <div class="menu-toggle" id="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+      <div id="navBar" class="hidden-text" data-anim="fade-up">
+        <a href="index.php" class="Home">Home</a>
+        <a href="Tracker.html" class="tracker">Tracker</a>
+
+        <?php if($isLoggedIn): ?>
+          <span>Welcome, <?php echo htmlspecialchars($username); ?>!</span>
+          <a href="logout.php">Logout</a>
+        <?php else: ?>
+          <a href="login.html">Login</a>
+          <a href="Register.html" class="SignUp">Sign Up</a>
+        <?php endif; ?>
+      </div>
     </div>
-    <header>
-        <div class="Navigation">
-            <div id="logo" class="hidden-text" data-anim="fade-up">
-                <a href="index.php">Bustle</a>
-            </div>
+  </header>
 
-            <div class="menu-toggle" id="menu-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
+  <div class="Content">
+    <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
+    <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
+    <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
+  </div>
 
-            <div id="navBar" class="hidden-text" data-anim="fade-up">
-                <a href="index.php" class="Home">Home</a>
-                <a href="Tracker.html" class="tracker">Tracker</a>
-
-                <?php if($isLoggedIn): ?>
-                    <span>Welcome, <?php echo htmlspecialchars($username); ?>!</span>
-                    <a href="logout.php">Logout</a>
-                <?php else: ?>
-                    <a href="login.html">Login</a>
-                    <a href="Register.html" class="SignUp">Sign Up</a>
-                <?php endif; ?>
-            </div>
-        </div>
-    </header>
-
-    <div class="Content">
-        <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
-        <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
-        <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
+  <section class="info">
+    <div class="info-text">
+      <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
+      <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
+      <p class="hidden-text" data-anim="fade-left"> 
+        Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
+        running around looking for buses, students can track arrivals in real time.
+      </p>
     </div>
+    <div class="info-img">
+      <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
+    </div>
+  </section>
 
-    <section class="info">
-        <div class="info-text">
-            <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
-            <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
-            <p class="hidden-text" data-anim="fade-left"> 
-                Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
-                running around looking for buses, students can track arrivals in real time.
-            </p>
-        </div>
-        <div class="info-img">
-            <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
-        </div>
-    </section>
+  <hr class="hidden-text" data-anim="fade-up">
 
-    <hr class="hidden-text" data-anim="fade-up">
+  <section class="aboutUs">
+    <div class="about">
+      <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
+      <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
+      <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
+      take—saving time, reducing stress, and making sure you never miss class again</p>
+    </div>
+  </section>
 
-    <section class="aboutUs">
-        <div class="about">
-            <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
-            <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
-            <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
-            take—saving time, reducing stress, and making sure you never miss class again</p>
-        </div>
-    </section>
+  <footer>
+    <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
+    <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
+    <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
+  </footer>
 
-    <footer>
-        <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
-        <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
-        <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
-    </footer>
+  <script>
+    const toggle = document.getElementById('menu-toggle');
+    const navBar = document.getElementById('navBar');
 
-    <script>
-        const toggle = document.getElementById('menu-toggle');
-        const navBar = document.getElementById('navBar');
-        toggle.addEventListener('click', () => {
-            navBar.classList.toggle('active');
-        });
-    </script>
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      navBar.classList.toggle('active');
+    });
+  </script>
 </body>
 </html>
