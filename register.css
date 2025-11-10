@@ -346,3 +346,75 @@ form {
     display: block;
     opacity: 1;
 }
+
+/* ========== MOBILE FIXES ========== */
+@media (max-width: 768px) {
+    /* Container adapts to mobile */
+    #container {
+        width: 90% !important;
+        height: auto !important;
+        min-height: 500px;
+    }
+
+    /* Form box full width, relative */
+    .form-box {
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        right: 0 !important;
+        padding: 20px !important;
+        margin-bottom: 20px;
+        z-index: 1;
+    }
+
+    /* Toggle box flows below form */
+    .toggleBox,
+    .toggle-panel,
+    .toggle-panel.toggle-left,
+    .toggle-panel.toggle-right {
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        transform: none !important;
+        background: transparent !important;
+        z-index: auto !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 0;
+        margin-top: 20px;
+    }
+
+    /* Hide yellow background pseudo-element */
+    .toggleBox::before {
+        display: none !important;
+    }
+
+    /* Login button matches register button */
+    .toggle-panel .btn {
+        width: 90% !important;
+        max-width: 250px !important;
+        background-color: #FF9A00 !important; /* same as register button */
+        color: #fff !important;               /* white text */
+        text-align: center !important;
+        border: none !important;
+        margin: 0 auto !important;            /* center horizontally */
+    }
+
+    .toggle-panel .btn:hover {
+        background-color: #e68a00 !important; /* slightly darker on hover */
+        color: #fff !important;
+    }
+
+    /* Center text in toggle panel */
+    .toggle-panel h1,
+    .toggle-panel p {
+        color: #4F200D !important;
+        text-align: center !important;
+    }
+}
+
