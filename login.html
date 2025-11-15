@@ -18,7 +18,7 @@
         <section>
         <div class="Navigation">
             <div id="logo" class="hidden-text" data-anim="fade-up">
-                <a href="index.html">Bustle</a>
+                <a href="index.php">Bustle</a>
             </div>
         </div>
         <div id="container" class="hidden-text" data-anim="fade-up">
@@ -30,7 +30,7 @@
                         <i class="fa-solid fa-user"></i>
                     </div>
                     <div class="inputBox">
-                        <input type="text" name="password" placeholder="Password" required>
+                        <input type="password" name="password" placeholder="Password" required>
                         <i class="fa-solid fa-lock"></i>
                     </div>
                     <div class="forgetPass">
@@ -38,32 +38,6 @@
                     </div>
                     <button type="submit" class="submitBtn">Login</button>
                     <p>or Login with social platforms</p>
-                    <div class="socials">
-                        <a href=""><i class="fa-brands fa-google"></i></a>
-                        <a href=""><i class="fa-brands fa-facebook"></i></a>
-                        <a href=""><i class="fa-brands fa-github"></i></a>
-                    </div>
-                </form>
-            </div>
-            <!--Register-->
-            <div class="Register">
-                <div class="form-box registerBox">
-                <form action="#">
-                    <h1>Registration</h1>
-                    <div class="inputBox">
-                        <input type="text" placeholder="Username" required>
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <div class="inputBox">
-                        <input type="email" placeholder="Email" required>
-                        <i class="fa-solid fa-envelope"></i>
-                    </div>
-                    <div class="inputBox">
-                        <input type="password" placeholder="Password" required>
-                        <i class="fa-solid fa-lock"></i>
-                    </div>
-                    <button type="submit" class="submitBtn">Register</button>
-                    <p>or Register with social platforms</p>
                     <div class="socials">
                         <a href=""><i class="fa-brands fa-google"></i></a>
                         <a href=""><i class="fa-brands fa-facebook"></i></a>
@@ -85,5 +59,62 @@
             </div>
         </div>
     </section>
+<script>
+// Get the form
+const form = document.querySelector('form[action="login.php"]');
+
+// Create popup container
+const popup = document.createElement('div');
+popup.id = 'popupMessage';
+document.body.appendChild(popup);
+
+// CSS for popup
+const style = document.createElement('style');
+style.textContent = `
+#popupMessage {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    background-color: #f44336;
+    color: white;
+    font-family: Arial, sans-serif;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: all 0.5s ease;
+}
+#popupMessage.success { background-color: #4CAF50; }
+#popupMessage.show { display: block; opacity: 1; }
+`;
+document.head.appendChild(style);
+
+// Handle login form via AJAX
+form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // prevent page reload
+
+    const formData = new FormData(form);
+
+    const res = await fetch('login.php', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    // Show popup
+    popup.textContent = data.message;
+    popup.className = '';
+    popup.classList.add(data.status, 'show');
+
+    // Hide popup after 3 seconds
+    setTimeout(() => {
+        popup.classList.remove('show');
+
+        // Redirect after success
+        if (data.status === 'success') {
+            window.location.href = 'index.php';
+        }
+    }, 1500);
+});
+</script>
     </body>
 </html>
