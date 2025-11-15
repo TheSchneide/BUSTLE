@@ -1,44 +1,29 @@
 <?php
-include 'db_connect.php';
+// Include the new classes
+include 'Database.php';
+include 'User.php';
 
 header('Content-Type: application/json');
 
-$response = ['status' => '', 'message' => ''];
-
+// Only proceed if it's a POST request
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    // 1. Create database connection
+    $db = new Database();
+    
+    // 2. Create a User object, passing in the connection
+    $user = new User($db->getConnection());
 
-    // Check email
-    $checkEmail = $conn->prepare("SELECT * FROM users WHERE email = ?");
-    $checkEmail->bind_param("s", $email);
-    $checkEmail->execute();
-    $emailResult = $checkEmail->get_result();
-
-    // Check username
-    $checkUsername = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $checkUsername->bind_param("s", $username);
-    $checkUsername->execute();
-    $userResult = $checkUsername->get_result();
-
-    if ($emailResult->num_rows > 0) {
-        $response['status'] = 'error';
-        $response['message'] = 'Email already registered!';
-    } elseif ($userResult->num_rows > 0) {
-        $response['status'] = 'error';
-        $response['message'] = 'Username already taken!';
-    } else {
-        $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-        $stmt->bind_param("sss", $username, $email, $password);
-        if ($stmt->execute()) {
-            $response['status'] = 'success';
-            $response['message'] = 'Registration successful!';
-        } else {
-            $response['status'] = 'error';
-            $response['message'] = 'Registration failed. Try again.';
-        }
-    }
+    // 3. Call the register method
+    $response = $user->register(
+        trim($_POST['username']),
+        trim($_POST['email']),
+        $_POST['password']
+    );
+    
+    // 4. Echo the response from the method
+    echo json_encode($response);
+    
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
 }
-
-echo json_encode($response);
+?>

@@ -1,33 +1,30 @@
 <?php
-include 'db_connect.php';
+include 'Database.php';
+include 'Ride.php';
 session_start();
 
+header('Content-Type: application/json');
+$response = ['status' => 'error', 'message' => 'Invalid request.'];
+
 if (!isset($_SESSION['user_id'])) {
-    die("You must log in first!");
+    $response['message'] = 'You must log in first!';
+    echo json_encode($response);
+    exit();
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $plate_number = $_POST['plate_number'];
-    $destination = $_POST['destination'];
+    // 1. Create objects
+    $db = new Database();
+    $ride = new Ride($db->getConnection());
 
-    $bus_query = $conn->prepare("SELECT bus_id FROM buses WHERE plate_number = ?");
-    $bus_query->bind_param("s", $plate_number);
-    $bus_query->execute();
-    $bus_result = $bus_query->get_result();
-
-    if ($bus_result->num_rows > 0) {
-        $bus = $bus_result->fetch_assoc();
-        $bus_id = $bus['bus_id'];
-
-        $stmt = $conn->prepare("INSERT INTO rides (user_id, bus_id, destination) VALUES (?, ?, ?)");
-        $stmt->bind_param("iis", $_SESSION['user_id'], $bus_id, $destination);
-        if ($stmt->execute()) {
-            echo "Ride recorded successfully.";
-        } else {
-            echo "Error recording ride.";
-        }
-    } else {
-        echo "Bus not found.";
-    }
+    // 2. Call the method
+    $response = $ride->record(
+        $_SESSION['user_id'],
+        $_POST['plate_number'],
+        $_POST['destination']
+    );
 }
+
+// 3. Echo the JSON response
+echo json_encode($response);
 ?>

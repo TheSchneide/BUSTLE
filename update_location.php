@@ -1,29 +1,23 @@
 <?php
-include 'db_connect.php';
+include 'Database.php';
+include 'Bus.php';
+
+header('Content-Type: application/json');
+$response = ['status' => 'error', 'message' => 'Invalid request.'];
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $plate_number = $_POST['plate_number'];
-    $latitude = $_POST['latitude'];
-    $longitude = $_POST['longitude'];
+    // 1. Create objects
+    $db = new Database();
+    $bus = new Bus($db->getConnection());
 
-    $bus_query = $conn->prepare("SELECT bus_id FROM buses WHERE plate_number = ?");
-    $bus_query->bind_param("s", $plate_number);
-    $bus_query->execute();
-    $bus_result = $bus_query->get_result();
-
-    if ($bus_result->num_rows > 0) {
-        $bus = $bus_result->fetch_assoc();
-        $bus_id = $bus['bus_id'];
-
-        $stmt = $conn->prepare("INSERT INTO bus_locations (bus_id, latitude, longitude) VALUES (?, ?, ?)");
-        $stmt->bind_param("idd", $bus_id, $latitude, $longitude);
-        if ($stmt->execute()) {
-            echo "Location updated.";
-        } else {
-            echo "Error updating location.";
-        }
-    } else {
-        echo "Bus not found.";
-    }
+    // 2. Call the method
+    $response = $bus->updateLocation(
+        $_POST['plate_number'],
+        $_POST['latitude'],
+        $_POST['longitude']
+    );
 }
+
+// 3. Echo the JSON response
+echo json_encode($response);
 ?>
