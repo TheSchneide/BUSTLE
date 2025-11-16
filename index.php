@@ -16,16 +16,15 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-    /* ✅ Responsive dropdown below header */
 
     header {
       position: relative;
       z-index: 1000;
-      background-color: #fff; /* keep original theme color */
+      background-color: #fff; 
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    /* Hamburger icon */
+
     .menu-toggle {
       display: none;
       flex-direction: column;
@@ -44,7 +43,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       transition: all 0.3s ease;
     }
 
-    /* Animate hamburger → X */
+
     .menu-toggle.active span:nth-child(1) {
       transform: rotate(45deg) translate(4px, 4px);
     }
@@ -55,7 +54,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       transform: rotate(-45deg) translate(4px, -4px);
     }
 
-    /* Dropdown menu */
+
     @media (max-width: 768px) {
       #navBar {
         display: flex;
@@ -64,7 +63,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
         text-align: center;
         background-color: white;
         position: absolute;
-        top: 100%; /* ✅ starts below header */
+        top: 100%; 
         left: 0;
         width: 100%;
         overflow: hidden;
@@ -74,7 +73,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       }
 
       #navBar.active {
-        max-height: 300px; /* smooth dropdown */
+        max-height: 300px; 
         padding-top: 20px;
         padding-bottom: 20px;
       }

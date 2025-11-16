@@ -13,11 +13,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // 1. Create objects
     $db = new Database();
     $ride = new Ride($db->getConnection());
 
-    // 2. Call the method
     $response = $ride->record(
         $_SESSION['user_id'],
         $_POST['plate_number'],
@@ -25,6 +23,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     );
 }
 
-// 3. Echo the JSON response
 echo json_encode($response);
 ?>

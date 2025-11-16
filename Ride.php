@@ -6,11 +6,6 @@ class Ride {
         $this->conn = $db_connection;
     }
 
-    /**
-     * Records a new ride for a user.
-     * Logic from old record_ride.php
-     * @return array A response array
-     */
     public function record($userId, $plateNumber, $destination) {
         // 1. Find bus
         $bus_query = $this->conn->prepare("SELECT bus_id FROM buses WHERE plate_number = ?");
@@ -22,7 +17,6 @@ class Ride {
             $bus = $bus_result->fetch_assoc();
             $bus_id = $bus['bus_id'];
 
-            // 2. Insert ride
             $stmt = $this->conn->prepare("INSERT INTO rides (user_id, bus_id, destination) VALUES (?, ?, ?)");
             $stmt->bind_param("iis", $userId, $bus_id, $destination);
             
