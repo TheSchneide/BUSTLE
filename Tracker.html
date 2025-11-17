@@ -71,8 +71,11 @@
                 [10.335997, 123.938579],
                 [10.338196, 123.944092],
                 [10.340796, 123.949214],
+                [10.340896, 123.949214],
                 [10.339409, 123.953100],
+                [10.339509, 123.953100],
                 [10.333641, 123.961298],
+                [10.333741, 123.961298],
                 [10.323553, 123.972286],
                 [10.326384, 123.977480],
                 [10.331931, 123.987888],
@@ -92,7 +95,11 @@
             let stopMarkers = stops.map(stop => {
                 return L.circleMarker(stop, { color: 'green' })
                     .addTo(map)
-                    .bindPopup("Bus Stop");
+                    .bindPopup(`
+                    <b>Bus Stop</b><br>
+                    Latitude: ${stop[0].toFixed(6)}<br>
+                    Longitude: ${stop[1].toFixed(6)}
+                `);
             });
 
             // Find nearest stop to user
@@ -113,16 +120,23 @@
             if (walkingData.routes && walkingData.routes.length > 0) {
                 const walkingRoute = walkingData.routes[0];
 
-                // Convert seconds → minutes and adjust for realistic walking pace (1.4x slower)
-                const walkingTimeMinutes = ((walkingRoute.duration * 1.4) / 60).toFixed(1);
+                // Convert seconds → minutes and adjust for realistic walking pace (1.7x slower)
+                const walkingTimeMinutes = ((walkingRoute.duration * 1.7) / 60).toFixed(1);
 
                 L.geoJSON(walkingRoute.geometry, {
-                    style: { color: 'purple', weight: 4, dashArray: '5,10' }
+                    style: { color: 'orange', weight: 4, dashArray: '5,10' }
                 }).addTo(map)
                     .bindPopup(`Walking route to nearest stop: ${walkingTimeMinutes} min`)
                     .openPopup();
             }
 
+            function getBusDistanceToNearestStop(bus, nearestStop, map) {
+                if (!bus.latitude || !bus.longitude) return Infinity;
+                return map.distance(
+                    [parseFloat(bus.latitude), parseFloat(bus.longitude)],
+                    nearestStop
+                );
+            }
 
 
             // Fetch and update bus positions + routes
@@ -130,64 +144,121 @@
                 const response = await fetch('get_buses.php');
                 const buses = await response.json();
 
-                // Update stop popups if bus is near
+                // ---------- 1. Update bus stop popups ----------
                 stopMarkers.forEach((marker, i) => {
                     const stop = stops[i];
                     const busAtStop = buses.some(bus => {
                         if (!bus.latitude || !bus.longitude) return false;
                         return map.distance([parseFloat(bus.latitude), parseFloat(bus.longitude)], stop) <= arrivalThreshold;
                     });
-                    marker.setPopupContent(busAtStop ? "Bus has arrived!" : "Bus Stop");
+                    marker.setPopupContent(`
+                        <b>Bus Stop</b><br>
+                        Latitude: ${stop[0].toFixed(6)}<br>
+                        Longitude: ${stop[1].toFixed(6)}<br>
+                        <b>Status:</b> ${busAtStop ? "Bus has arrived!" : "No bus at stop"}
+                    `);
                 });
+
+                // ---------- 2. Find the single closest bus ----------
+                let closestBus = null;
+                let closestDistance = Infinity;
 
                 for (let bus of buses) {
                     if (!bus.latitude || !bus.longitude) continue;
-                    const busPos = [parseFloat(bus.latitude), parseFloat(bus.longitude)];
-
-                    // Update or create bus marker
-                    if (busMarkers[bus.bus_id]) {
-                        busMarkers[bus.bus_id].setLatLng(busPos);
-                    } else {
-                        busMarkers[bus.bus_id] = L.marker(busPos, { icon: busIcon }).addTo(map);
-                    }
-
-                    // Filter stops between bus and user's nearest stop
-                    const stopsToRoute = stops.filter(stop => {
-                        const distBusToStop = map.distance(busPos, stop);
-                        const distStopToNearest = map.distance(stop, nearestStop);
-                        const distBusToNearest = map.distance(busPos, nearestStop);
-                        return distBusToStop < distBusToNearest && distStopToNearest < distBusToNearest;
-                    });
-
-                    // Build route: bus → filtered stops → nearest stop
-                    const routePoints = [busPos, ...stopsToRoute, nearestStop];
-                    const coords = routePoints.map(p => `${p[1]},${p[0]}`).join(';');
-                    const routeURL = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-
-                    const routeResp = await fetch(routeURL);
-                    const routeData = await routeResp.json();
-
-                    if (routeData.routes && routeData.routes.length > 0) {
-                        const route = routeData.routes[0];
-
-                        // Remove old route if exists
-                        if (busRoutes[bus.bus_id]) {
-                            map.removeLayer(busRoutes[bus.bus_id]);
-                        }
-
-                        // Draw new route
-                        busRoutes[bus.bus_id] = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4 } }).addTo(map);
-
-                        // Update popup with ETA
-                        const etaMinutes = (route.duration / 60).toFixed(1);
-                        busMarkers[bus.bus_id].bindPopup(`
-                            <b>Bus Plate:</b> ${bus.plate_number}<br>
-                            <b>Route:</b> ${bus.route || 'N/A'}<br>
-                            ETA to nearest stop: ${etaMinutes} min
-                        `);
+                    const d = map.distance([parseFloat(bus.latitude), parseFloat(bus.longitude)], nearestStop);
+                    if (d < closestDistance) {
+                        closestDistance = d;
+                        closestBus = bus;
                     }
                 }
+
+                if (!closestBus) return;
+
+                // ---------- 3. Remove all other buses & routes ----------
+                Object.keys(busMarkers).forEach(id => {
+                    if (parseInt(id) !== parseInt(closestBus.bus_id)) {
+                        map.removeLayer(busMarkers[id]);
+                        delete busMarkers[id];
+                    }
+                });
+
+                Object.keys(busRoutes).forEach(id => {
+                    if (parseInt(id) !== parseInt(closestBus.bus_id)) {
+                        map.removeLayer(busRoutes[id]);
+                        delete busRoutes[id];
+                    }
+                });
+
+                // ---------- 4. Display only the closest bus ----------
+                const busPos = [
+                    parseFloat(closestBus.latitude),
+                    parseFloat(closestBus.longitude)
+                ];
+
+                if (busMarkers[closestBus.bus_id]) {
+                    busMarkers[closestBus.bus_id].setLatLng(busPos);
+                } else {
+                    busMarkers[closestBus.bus_id] = L.marker(busPos, { icon: busIcon }).addTo(map);
+                }
+
+                // ---------- 5. Determine logical route ----------
+                // Merge very close stops for routing
+                const mergedStops = [];
+                let lastStop = null;
+                for (let stop of stops) {
+                    if (!lastStop || map.distance(stop, lastStop) > 15) { // 15 meters threshold
+                        mergedStops.push(stop);
+                        lastStop = stop;
+                    }
+                }
+
+                // Find closest stop on the merged route
+                const busIndex = mergedStops.reduce((closestIndex, stop, i) => {
+                    return map.distance(busPos, stop) < map.distance(busPos, mergedStops[closestIndex]) ? i : closestIndex;
+                }, 0);
+
+                const nearestStopIndex = mergedStops.reduce((closestIndex, stop, i) => {
+                    return map.distance(nearestStop, stop) < map.distance(nearestStop, mergedStops[closestIndex]) ? i : closestIndex;
+                }, 0);
+
+                // Slice route in correct order
+                let routeStops;
+                if (busIndex <= nearestStopIndex) {
+                    routeStops = mergedStops.slice(busIndex + 1, nearestStopIndex + 1);
+                } else {
+                    routeStops = mergedStops.slice(nearestStopIndex, busIndex).reverse();
+                }
+
+                const routePoints = [busPos, ...routeStops, nearestStop];
+
+                // ---------- 6. Build OSRM route ----------
+                const coords = routePoints.map(p => `${p[1]},${p[0]}`).join(';');
+                const routeURL = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+                const routeResp = await fetch(routeURL);
+                const routeData = await routeResp.json();
+
+                if (routeData.routes && routeData.routes.length > 0) {
+                    const route = routeData.routes[0];
+
+                    if (busRoutes[closestBus.bus_id]) {
+                        map.removeLayer(busRoutes[closestBus.bus_id]);
+                    }
+
+                    busRoutes[closestBus.bus_id] = L.geoJSON(route.geometry, {
+                        style: { color: 'blue', weight: 4 }
+                    }).addTo(map);
+
+                    const etaMinutes = (route.duration / 60).toFixed(1);
+                    busMarkers[closestBus.bus_id].bindPopup(`
+                        <b>Bus Plate:</b> ${closestBus.plate_number}<br>
+                        <b>Route:</b> ${closestBus.route || 'N/A'}<br>
+                        ETA to nearest stop: ${etaMinutes} min
+                    `);
+                }
             }
+
+
 
             updateBuses();
             setInterval(updateBuses, 5000); // refresh every 5 seconds
