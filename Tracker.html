@@ -24,14 +24,17 @@
                 <a href="logout.php" class="tracker">Logout</a>
             </div>
         </div>
-        <div class="modalInfo">
-            <div class="modalContent"></div>
+        <div id="map"></div>
+        <button id="openModalBtn" class="openModalBtn">Calculate</button>
+    </header>
+
+    <div class="modalInfo">
+        <div class="modalContent">
             <span class="close">&times;</span>
             <p>Test123</p>
         </div>
-        <div id="map"></div>
-    </header>
-    
+    </div>
+
     <footer>
         <a href="index.php">@Bustle.com</a>
         <a href="">BustleCrew@gmail.com</a>
@@ -267,16 +270,39 @@
 
 
             updateBuses();
-            setInterval(updateBuses, 5000); // refresh every 5 seconds
+            setInterval(updateBuses, 5000); 
         });
 
-        const toggle = document.getElementById('menu-toggle');
-        const navBar = document.getElementById('navBar');
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.querySelector('.modalInfo');
+            const closeBtn = document.querySelector('.close');
+            const openBtn = document.getElementById('openModalBtn');
 
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('active');
-            navBar.classList.toggle('active');
+
+            function openModal() {
+                modal.classList.add('active');   
+                openBtn.style.display = "none";  
+            }
+
+
+            function closeModal() {
+                modal.classList.add('closing');
+                setTimeout(() => {
+                    modal.classList.remove('active'); 
+                    modal.classList.remove('closing'); 
+                    openBtn.style.display = "block";   
+                }, 300); 
+            }
+
+            openBtn.addEventListener('click', openModal);
+            closeBtn.addEventListener('click', closeModal);
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
         });
+
 
     </script>
 </body>
