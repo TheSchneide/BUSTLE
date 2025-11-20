@@ -155,6 +155,11 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   <div class="Content">
       <?php if($isLoggedIn): ?>
         <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span> </h2>
+        <div class="bussin">
+          <div class="busInfo">
+            <p>testing</p>
+          </div>
+        </div>
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
         <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>

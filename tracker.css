@@ -12,10 +12,9 @@ html, body {
 
 header {
   display: flex;
-  flex-direction: column; /* nav above map */
-  /* allow header to grow so map can fill remaining space */
+  flex-direction: column;
   flex: 1 1 auto;
-  min-height: 0; /* critical so children can shrink in some browsers */
+  min-height: 0;
 }
 
 .Navigation {
@@ -52,11 +51,10 @@ header {
   font-weight: bolder;
 }
 
-/* ✅ The flexible map container */
 #map {
-  flex-grow: 1; /* takes all remaining space */
+  flex-grow: 1;
   width: 100%;
-  min-height: 300px; /* fallback for very small screens */
+  min-height: 300px;
 }
 
 .modalInfo{
@@ -91,7 +89,6 @@ header {
   cursor: pointer;
 }
 
-
 footer {
   flex-shrink: 0;
   background: #ffffff;
@@ -108,7 +105,6 @@ footer a {
   font-weight: bold;
 }
 
-/* ✅ Responsive text tweaks */
 @media (max-width: 768px) {
   #logo {
     font-size: 2rem;
