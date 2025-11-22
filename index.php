@@ -16,14 +16,12 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-
     header {
       position: relative;
       z-index: 1000;
       background-color: #fff; 
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-
 
     .menu-toggle {
       display: none;
@@ -34,6 +32,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       cursor: pointer;
       z-index: 1101;
     }
+
     .menu-toggle span {
       display: block;
       height: 3px;
@@ -42,7 +41,6 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       border-radius: 2px;
       transition: all 0.3s ease;
     }
-
 
     .menu-toggle.active span:nth-child(1) {
       transform: rotate(45deg) translate(4px, 4px);
@@ -53,7 +51,6 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
     .menu-toggle.active span:nth-child(3) {
       transform: rotate(-45deg) translate(4px, -4px);
     }
-
 
     @media (max-width: 768px) {
       #navBar {
@@ -85,6 +82,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
       .Content {
         padding: 40px 20px;
         text-align: center;
+        gap: 2rem;
       }
 
       .Content img {
@@ -155,7 +153,7 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
   <div class="Content">
         <!--if logged in-->
       <?php if($isLoggedIn): ?>
-        <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span> </h2>
+        <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span></h2>
         <div class="bussin">
           <div class="busInfo">
             <p>testing</p>

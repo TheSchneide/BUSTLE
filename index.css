@@ -12,6 +12,10 @@ hr {
     background-color:#4F200D;
 }
 
+.h2 {
+  margin: 0;
+}
+
 #loading-screen {
   position: fixed;
   top: 0;
@@ -162,6 +166,7 @@ hr {
     justify-content: center;
     flex-direction: column;
     padding-top: 1rem;
+    gap: 2rem;
 }
 .Content h2 {
     font-size: 3rem;
@@ -298,7 +303,6 @@ hr {
 .busInfo {
   background-color: #fefefe;
   margin: auto;
-  margin-top: 100px;
   padding: 50px;
   border: 1px solid #888;
   border-radius: 5rem;
