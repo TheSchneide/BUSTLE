@@ -166,7 +166,7 @@ hr {
     justify-content: center;
     flex-direction: column;
     padding-top: 1rem;
-    gap: 2rem;
+    gap: 1rem;
 }
 .Content h2 {
     font-size: 3rem;
@@ -297,7 +297,6 @@ hr {
   right: 0;
   width: 100%;
   height: 100%;
-  margin-top: 100px;
 }
 
 .busInfo {
@@ -307,6 +306,7 @@ hr {
   border: 1px solid #888;
   border-radius: 5rem;
   width: 80%;
+  margin-top: 50px;
 }
 
 footer{
