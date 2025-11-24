@@ -212,3 +212,91 @@ footer a {
     padding: 10px;
   }
 }
+
+
+/* --- Add this to the bottom of tracker.css --- */
+
+.modalContent h2 {
+  margin-top: 0;
+  color: #4F200D;
+  font-family: Caprasimo;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #4F200D;
+}
+
+.input-group select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: Outfit;
+  font-size: 16px;
+  background-color: #f9f9f9;
+}
+
+.fare-display {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #FF9A00;
+  color: #4F200D;
+  border-radius: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.fare-details {
+  font-size: 0.9rem;
+  font-weight: normal;
+  margin-top: 5px;
+  display: block;
+}
+
+/* --- Autocomplete Dropdown Styles --- */
+.search-wrapper {
+    position: relative; /* vital for positioning the dropdown */
+    width: 100%;
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    z-index: 1001;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: none; /* Hidden by default */
+}
+
+.suggestions-list div {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+.suggestions-list div:hover {
+    background-color: #ffead0; /* Light orange hover */
+}
+
+.suggestions-list div strong {
+    color: #4F200D;
+    display: block;
+}
