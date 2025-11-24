@@ -157,6 +157,8 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
         <div class="bussin">
           <div class="busInfo">
             <h2>Recently Viewed</h2>
+            <p>Last stop: (location)</p>
+            <p>Fare: ₱</p>
           </div>
         </div>
       <?php else: ?>
