@@ -27,43 +27,38 @@
         <div id="map"></div>
     </header>
 
-    <!-- Dark overlay behind the sheet -->
     <div id="sheetOverlay" class="sheet-overlay"></div>
 
-    <!-- Bottom Sheet Container -->
     <div id="bottomSheet" class="bottom-sheet">
         <div class="sheet-header" id="sheetHeader">
             <div class="sheet-handle-bar"></div>
-            <h2 class="sheet-title">BUS</h2>
+            <h2 class="sheet-title" id="sheetTitle">BUS</h2>
         </div>
 
         <div class="sheet-content">
             
-            <!-- Pick Up Section -->
             <div class="input-group">
                 <label class="input-label">Pick-up Point</label>
                 <input type="text" id="pickupInput" class="clean-input" placeholder="Search location..." autocomplete="off">
                 <div id="pickupSuggestions" class="suggestions-list"></div>
-                <div class="divider"><span>OR SELECT STOP</span></div>
+                <div class="divider"><span>OR SELECT LANDMARK</span></div>
                 <select id="pickupSelect" class="styled-select">
-                    <option value="" disabled selected>-- Choose a Bus Stop --</option>
+                    <option value="" disabled selected>-- Loading Stops... --</option>
                 </select>
                 <div id="pickupMsg" class="helper-text"></div>
             </div>
 
-            <!-- Destination Section -->
             <div class="input-group">
                 <label class="input-label">Destination</label>
                 <input type="text" id="destInput" class="clean-input" placeholder="Search location..." autocomplete="off">
                 <div id="destSuggestions" class="suggestions-list"></div>
-                <div class="divider"><span>OR SELECT STOP</span></div>
+                <div class="divider"><span>OR SELECT LANDMARK</span></div>
                 <select id="destSelect" class="styled-select">
-                    <option value="" disabled selected>-- Choose a Bus Stop --</option>
+                    <option value="" disabled selected>-- Loading Stops... --</option>
                 </select>
                 <div id="destMsg" class="helper-text"></div>
             </div>
 
-            <!-- Student Toggle Switch -->
             <div class="toggle-container">
                 <div class="toggle-label">
                     Student / PWD / Senior
@@ -75,7 +70,6 @@
                 </label>
             </div>
 
-            <!-- Result Display -->
             <div id="fareResult" class="fare-display">
                 ₱ 0
                 <span class="fare-details">Select locations to calculate</span>
@@ -88,25 +82,14 @@
         <a href="">BustleCrew@gmail.com</a>
         <a href="">+091234567</a>
     </footer>
-
     <script>
         // --- Logic Configuration ---
-        // TARGETS:
-        // 1. Base Fare: 13.00 (Student)
-        // 2. 12.76 km -> 27.00
-        // 3. 13.84 km -> 29.00
-        // 4. 16.50 km -> 37.00
-        
-        // To fit these specific points, we adjust the Base Distance and Rate:
         const STUDENT_BASE_FARE = 13.00;
-        const STUDENT_BASE_DIST = 7.4;    // The first 7.4km is covered by the base fare
-        const STUDENT_EXCESS_RATE = 2.56; // Price per km after 7.4km
+        const STUDENT_BASE_DIST = 7.4;    
+        const STUDENT_EXCESS_RATE = 2.56; 
 
-        // Regular Fare (Student / 0.80)
         const REGULAR_BASE_FARE = STUDENT_BASE_FARE / 0.8; 
         const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
-
-        // ---------------------
 
         const map = L.map('map').setView([10.32853, 123.9089], 13); 
 
@@ -115,52 +98,74 @@
             attribution: '&copy; OpenStreetMap'
         }).addTo(map);
 
-        const stops = [
-            [10.32853, 123.9089],
-            [10.33941, 123.9116], 
-            [10.3519, 123.91386],
-            [10.354847, 123.914696],
-            [10.36, 123.91653], [10.354636, 123.921072],
-            [10.352872, 123.922684], [10.350284, 123.924797], [10.349241, 123.925624],
-            [10.347291, 123.928041], [10.346524, 123.929341], [10.345279, 123.930602],
-            [10.342883, 123.932878], [10.340230, 123.935520], [10.338017, 123.937100],
-            [10.335997, 123.938579], [10.338196, 123.944092],
-            // [10.340796, 123.949214],
-            // [10.340896, 123.949214], 
-            // [10.339409, 123.953100], 
-            // [10.339509, 123.953100],
-            // [10.333641, 123.961298],
-            // [10.333741, 123.961298], 
-
-            // [10.323553, 123.972286],
-            // [10.326384, 123.977480], 
-            [10.331931, 123.987888], [10.331064, 123.988999],
-            [10.319322, 123.995067], [10.317076, 123.998081], [10.314963, 124.001165],
-            [10.311924, 124.005914], [10.310542, 124.009324], [10.308596, 124.010744]
-        ];
+        // Global stops array (Will be filled by Database)
+        let stops = [];
 
         const pickupSelect = document.getElementById('pickupSelect');
         const destSelect = document.getElementById('destSelect');
         const studentToggle = document.getElementById('studentToggle');
-
-        stops.forEach((stop, index) => {
-            const marker = L.circleMarker(stop, { color: 'green', radius: 4 }).addTo(map);
-            marker.bindPopup(`Bus Stop #${index + 1}`);
-            
-            marker.on('mouseover', function (e) { this.openPopup(); });
-            marker.on('mouseout', function (e) { this.closePopup(); });
-
-            let opt = document.createElement("option");
-            opt.value = index; 
-            opt.text = `Bus Stop #${index + 1}`;
-            pickupSelect.add(opt.cloneNode(true));
-            destSelect.add(opt.cloneNode(true));
-        });
+        const sheetTitle = document.getElementById('sheetTitle');
 
         let currentRouteLayer = null;
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
 
+        // --- 1. FETCH STOPS FROM DATABASE ---
+        async function fetchBusStops() {
+            try {
+                const response = await fetch('get_stops.php');
+                const data = await response.json();
+
+                stops = data.map(item => ({
+                    id: item.stop_id,
+                    name: item.stop_name,
+                    // Ensure lat/lng are floats
+                    lat: parseFloat(item.latitude),
+                    lng: parseFloat(item.longitude)
+                }));
+
+                initializeMapMarkers();
+                populateDropdowns();
+            } catch (error) {
+                console.error('Error loading stops:', error);
+                document.getElementById('pickupMsg').innerText = "Error connecting to database.";
+            }
+        }
+
+        function initializeMapMarkers() {
+            stops.forEach((stop, index) => {
+                // Using [lat, lng] format for Leaflet
+                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
+                
+                // Display the LANDMARK NAME instead of "Bus Stop #"
+                marker.bindPopup(`<b>${stop.name}</b>`);
+                
+                marker.on('mouseover', function (e) { this.openPopup(); });
+                marker.on('mouseout', function (e) { this.closePopup(); });
+            });
+        }
+
+        function populateDropdowns() {
+            // Clear "Loading..." options
+            pickupSelect.innerHTML = '<option value="" disabled selected>-- Choose a Landmark --</option>';
+            destSelect.innerHTML = '<option value="" disabled selected>-- Choose a Landmark --</option>';
+
+            stops.forEach((stop, index) => {
+                let opt = document.createElement("option");
+                // IMPORTANT: Value is the INDEX in the 'stops' array, not the DB ID. 
+                // This keeps logic for routing simple. We access DB ID via stops[index].id later.
+                opt.value = index; 
+                opt.text = stop.name; 
+                pickupSelect.add(opt.cloneNode(true));
+                destSelect.add(opt.cloneNode(true));
+            });
+        }
+
+        // Call fetch immediately
+        fetchBusStops();
+
+
+        // --- 2. SEARCH LOGIC ---
         studentToggle.addEventListener('change', calculateFare);
         document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
         document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
@@ -202,15 +207,22 @@
             const msg = document.getElementById(type + 'Msg');
             
             input.value = place.display_name.split(',')[0];
-            let nearestIndex = -1; let minDistance = Infinity;
+            
+            let nearestIndex = -1; 
+            let minDistance = Infinity;
+            
+            // Loop through dynamic 'stops' array
             stops.forEach((stop, index) => {
-                const dist = map.distance([lat, lon], stop);
+                const dist = map.distance([lat, lon], [stop.lat, stop.lng]);
                 if (dist < minDistance) { minDistance = dist; nearestIndex = index; }
             });
+
             if (nearestIndex !== -1) {
                 selectBox.value = nearestIndex;
-                msg.innerText = `Auto-selected Nearest Stop: #${nearestIndex + 1} (${(minDistance / 1000).toFixed(2)}km)`;
+                const stopName = stops[nearestIndex].name;
+                msg.innerText = `Auto-selected: ${stopName} (${(minDistance / 1000).toFixed(2)}km)`;
             }
+
             if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
             searchMarkers[type] = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${type.toUpperCase()}</b><br>${input.value}`).openPopup();
             map.setView([lat, lon], 14);
@@ -226,13 +238,16 @@
             const msg = document.getElementById(type + 'Msg');
             const index = selectBox.value;
             const stop = stops[index];
+            
             input.value = ""; 
-            msg.innerText = "Manual stop selection";
+            msg.innerText = "Manual selection: " + stop.name;
+            
             if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
-            map.setView(stop, 14);
+            map.setView([stop.lat, stop.lng], 14);
             calculateFare();
         }
 
+        // --- 3. CALCULATE & SAVE TRIP ---
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
@@ -244,18 +259,21 @@
             const dIndex = parseInt(destVal);
             
             if (pIndex === dIndex) {
-                resultDisplay.innerHTML = `₱ 0 <span class="fare-details">Start and End are same stop</span>`;
+                resultDisplay.innerHTML = `₱ 0 <span class="fare-details">Start and End are same</span>`;
+                sheetTitle.innerText = "₱ 0";
                 if(currentRouteLayer) map.removeLayer(currentRouteLayer); return;
             }
 
             resultDisplay.innerHTML = `Calculating... <span class="fare-details">Tracing route...</span>`;
+            sheetTitle.innerText = "BUS"; 
             if (currentRouteLayer) map.removeLayer(currentRouteLayer);
             
             let routeStops = [];
+            // Slice stops array based on selection
             if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); } 
             else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
             
-            const coordsString = routeStops.map(s => `${s[1]},${s[0]}`).join(';');
+            const coordsString = routeStops.map(s => `${s.lng},${s.lat}`).join(';');
             const routeURL = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
             
             try {
@@ -271,19 +289,41 @@
                     if (isStudent) {
                         fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
                     } else {
-                        // Regular fare calculation
                         const regularExcessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
                         fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
                     }
 
                     const finalFare = Math.round(fare);
 
+                    sheetTitle.innerText = `₱ ${finalFare}`; 
                     resultDisplay.innerHTML = `₱ ${finalFare}<span class="fare-details">Distance: ${distanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}</span>`;
                     
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
+
+                    // --- SAVE TO DATABASE ---
+                    saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
                 }
             } catch (error) { console.error(error); resultDisplay.innerHTML = `Error <span class="fare-details">Connection failed</span>`; }
+        }
+
+        async function saveTripToHistory(pickupId, dropoffId, amount) {
+            const formData = new FormData();
+            formData.append('pickup_id', pickupId);
+            formData.append('dropoff_id', dropoffId);
+            formData.append('fare', amount);
+
+            try {
+                // We don't need to wait for this response to show the price, 
+                // so we just fire and forget, or log errors in console.
+                await fetch('save_trip.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log("Trip saved to history");
+            } catch(e) {
+                console.error("Could not save trip history", e);
+            }
         }
 
         document.addEventListener('click', (e) => {
