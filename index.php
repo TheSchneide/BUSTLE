@@ -2,6 +2,7 @@
 session_start();
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
+$trip = $_SESSION['recent_trip'] ?? null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,10 +157,16 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
         <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span></h2>
         <div class="bussin">
           <div class="busInfo">
-            <h2>Recently Viewed</h2>
-            <p>Last stop: (location)</p>
-            <p>Fare: ₱</p>
-          </div>
+              <h2>Recently Viewed</h2>
+              <p><strong>Pickup:</strong> 
+                  <?= isset($_SESSION['recent_trip']) ? $_SESSION['recent_trip']['pickup_name'] : "No recent trip"; ?>
+              </p>
+              <p><strong>Dropoff:</strong> 
+                  <?= isset($_SESSION['recent_trip']) ? $_SESSION['recent_trip']['dropoff_name'] : "No recent trip"; ?>
+              </p>
+              <p><strong>Fare:</strong> ₱ 
+                  <?= isset($_SESSION['recent_trip']) ? number_format($_SESSION['recent_trip']['fare'], 2) : "0.00"; ?>
+              </p>
         </div>
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
@@ -215,6 +222,8 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
 
   document.querySelectorAll(".hidden-text").forEach(el => observer.observe(el));
 });
+
+
   </script>
 </body>
 </html>
