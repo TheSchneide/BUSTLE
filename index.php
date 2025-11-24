@@ -1,8 +1,40 @@
 <?php
 session_start();
+include 'Database.php'; // Include your database connection
+
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
-$trip = $_SESSION['recent_trip'] ?? null;
+
+// --- NEW CODE: Fetch from Database ---
+$recent_trip = null;
+
+if ($isLoggedIn) {
+    $db = new Database();
+    $conn = $db->getConnection();
+    $user_id = $_SESSION['user_id'];
+
+    // Query to get the last trip + stop names
+    $sql = "SELECT 
+                t.fare_amount, 
+                p.stop_name AS pickup_name, 
+                d.stop_name AS dropoff_name
+            FROM user_trips t
+            JOIN bus_stops p ON t.pickup_stop_id = p.stop_id
+            JOIN bus_stops d ON t.dropoff_stop_id = d.stop_id
+            WHERE t.user_id = ? 
+            ORDER BY t.trip_id DESC 
+            LIMIT 1";
+
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $recent_trip = $result->fetch_assoc();
+    }
+}
+// -------------------------------------
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -159,14 +191,15 @@ $trip = $_SESSION['recent_trip'] ?? null;
           <div class="busInfo">
               <h2>Recently Viewed</h2>
               <p><strong>Pickup:</strong> 
-                  <?= isset($_SESSION['recent_trip']) ? $_SESSION['recent_trip']['pickup_name'] : "No recent trip"; ?>
+                  <?php echo $recent_trip ? htmlspecialchars($recent_trip['pickup_name']) : "No recent trip"; ?>
               </p>
               <p><strong>Dropoff:</strong> 
-                  <?= isset($_SESSION['recent_trip']) ? $_SESSION['recent_trip']['dropoff_name'] : "No recent trip"; ?>
+                  <?php echo $recent_trip ? htmlspecialchars($recent_trip['dropoff_name']) : "No recent trip"; ?>
               </p>
               <p><strong>Fare:</strong> ₱ 
-                  <?= isset($_SESSION['recent_trip']) ? number_format($_SESSION['recent_trip']['fare'], 2) : "0.00"; ?>
+                  <?php echo $recent_trip ? number_format($recent_trip['fare_amount'], 2) : "0.00"; ?>
               </p>
+          </div>
         </div>
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
