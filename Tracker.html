@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bustle</title>
+    <title>Bustle - Fare Calculator</title>
     <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -25,13 +25,55 @@
             </div>
         </div>
         <div id="map"></div>
-        <button id="openModalBtn" class="openModalBtn">Calculate</button>
     </header>
 
-    <div class="modalInfo">
-        <div class="modalContent">
-            <span class="close">&times;</span>
-            <p>Test123</p>
+    <div id="sheetOverlay" class="sheet-overlay"></div>
+
+    <div id="bottomSheet" class="bottom-sheet">
+        <div class="sheet-header" id="sheetHeader">
+            <div class="sheet-handle-bar"></div>
+            <h2 class="sheet-title" id="sheetTitle">BUS</h2>
+        </div>
+
+        <div class="sheet-content">
+            
+            <div class="input-group">
+                <label class="input-label">Pick-up Point</label>
+                <input type="text" id="pickupInput" class="clean-input" placeholder="Search location..." autocomplete="off">
+                <div id="pickupSuggestions" class="suggestions-list"></div>
+                <div class="divider"><span>OR SELECT LANDMARK</span></div>
+                <select id="pickupSelect" class="styled-select">
+                    <option value="" disabled selected>-- Loading Stops... --</option>
+                </select>
+                <div id="pickupMsg" class="helper-text"></div>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">Destination</label>
+                <input type="text" id="destInput" class="clean-input" placeholder="Search location..." autocomplete="off">
+                <div id="destSuggestions" class="suggestions-list"></div>
+                <div class="divider"><span>OR SELECT LANDMARK</span></div>
+                <select id="destSelect" class="styled-select">
+                    <option value="" disabled selected>-- Loading Stops... --</option>
+                </select>
+                <div id="destMsg" class="helper-text"></div>
+            </div>
+
+            <div class="toggle-container">
+                <div class="toggle-label">
+                    Student / PWD / Senior
+                    <span class="toggle-sublabel">20% Discount applied</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="studentToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div id="fareResult" class="fare-display">
+                ₱ 0
+                <span class="fare-details">Select locations to calculate</span>
+            </div>
         </div>
     </div>
 
@@ -40,271 +82,269 @@
         <a href="">BustleCrew@gmail.com</a>
         <a href="">+091234567</a>
     </footer>
-
     <script>
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            let { latitude, longitude } = position.coords;
+        // --- Logic Configuration ---
+        const STUDENT_BASE_FARE = 13.00;
+        const STUDENT_BASE_DIST = 7.4;    
+        const STUDENT_EXCESS_RATE = 2.56; 
 
-            const map = L.map('map').setView([latitude, longitude], 13);
+        const REGULAR_BASE_FARE = STUDENT_BASE_FARE / 0.8; 
+        const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
 
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
+        const map = L.map('map').setView([10.32853, 123.9089], 13); 
 
-            L.marker([latitude, longitude]).addTo(map).bindPopup("You are here").openPopup();
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
 
-            const busIcon = L.icon({
-                iconUrl: 'busIcon.png',
-                iconSize: [100, 95],
-                iconAnchor: [22, 94],
-                popupAnchor: [-3, -76]
-            });
+        // Global stops array (Will be filled by Database)
+        let stops = [];
 
-            const stops = [
-                [10.32853, 123.9089],
-                [10.33941, 123.9116],
-                [10.354847, 123.914696],
-                [10.3519, 123.91386],
-                [10.36, 123.91653],
-                [10.354636, 123.921072],
-                [10.352872, 123.922684],
-                [10.350284, 123.924797],
-                [10.349241, 123.925624],
-                [10.347291, 123.928041],
-                [10.346524, 123.929341],
-                [10.345279, 123.930602],
-                [10.342883, 123.932878],
-                [10.340230, 123.935520],
-                [10.338017, 123.937100],
-                [10.335997, 123.938579],
-                [10.338196, 123.944092],
-                [10.340796, 123.949214],
-                [10.340896, 123.949214],
-                [10.339409, 123.953100],
-                [10.339509, 123.953100],
-                [10.333641, 123.961298],
-                [10.333741, 123.961298],
-                [10.323553, 123.972286],
-                [10.326384, 123.977480],
-                [10.331931, 123.987888],
-                [10.331064, 123.988999],
-                [10.319322, 123.995067],
-                [10.317076, 123.998081],
-                [10.314963, 124.001165],
-                [10.311924, 124.005914],
-                [10.310542, 124.009324],
-                [10.308596, 124.010744]
-            ];
+        const pickupSelect = document.getElementById('pickupSelect');
+        const destSelect = document.getElementById('destSelect');
+        const studentToggle = document.getElementById('studentToggle');
+        const sheetTitle = document.getElementById('sheetTitle');
 
-            const arrivalThreshold = 20;
+        let currentRouteLayer = null;
+        let searchMarkers = { pickup: null, dest: null };
+        let debounceTimer;
 
-            let busMarkers = {};
-            let busRoutes = {};
-            let stopMarkers = stops.map(stop => {
-                return L.circleMarker(stop, { color: 'green' })
-                    .addTo(map)
-                    .bindPopup(`
-                    <b>Bus Stop</b><br>
-                    Latitude: ${stop[0].toFixed(6)}<br>
-                    Longitude: ${stop[1].toFixed(6)}
-                `);
-            });
+        // --- 1. FETCH STOPS FROM DATABASE ---
+        async function fetchBusStops() {
+            try {
+                const response = await fetch('get_stops.php');
+                const data = await response.json();
 
-            // Find nearest stop to user
-            const nearestStop = stops.reduce((prev, curr) => {
-                return map.distance(curr, [latitude, longitude]) < map.distance(prev, [latitude, longitude]) ? curr : prev;
-            });
+                stops = data.map(item => ({
+                    id: item.stop_id,
+                    name: item.stop_name,
+                    // Ensure lat/lng are floats
+                    lat: parseFloat(item.latitude),
+                    lng: parseFloat(item.longitude)
+                }));
 
-            L.circleMarker(nearestStop, { color: 'orange' })
-                .addTo(map)
-                .bindPopup("Nearest Bus Stop to You")
-                .openPopup();
-
-            // Draw walking route from user to nearest stop
-            const walkingRouteURL = `https://router.project-osrm.org/route/v1/foot/${longitude},${latitude};${nearestStop[1]},${nearestStop[0]}?overview=full&geometries=geojson`;
-            const walkingResp = await fetch(walkingRouteURL);
-            const walkingData = await walkingResp.json();
-
-            if (walkingData.routes && walkingData.routes.length > 0) {
-                const walkingRoute = walkingData.routes[0];
-
-                // Convert seconds → minutes and adjust for realistic walking pace (1.7x slower)
-                const walkingTimeMinutes = ((walkingRoute.duration * 1.7) / 60).toFixed(1);
-
-                L.geoJSON(walkingRoute.geometry, {
-                    style: { color: 'orange', weight: 4, dashArray: '5,10' }
-                }).addTo(map)
-                    .bindPopup(`Walking route to nearest stop: ${walkingTimeMinutes} min`)
-                    .openPopup();
+                initializeMapMarkers();
+                populateDropdowns();
+            } catch (error) {
+                console.error('Error loading stops:', error);
+                document.getElementById('pickupMsg').innerText = "Error connecting to database.";
             }
+        }
 
-            function getBusDistanceToNearestStop(bus, nearestStop, map) {
-                if (!bus.latitude || !bus.longitude) return Infinity;
-                return map.distance(
-                    [parseFloat(bus.latitude), parseFloat(bus.longitude)],
-                    nearestStop
-                );
-            }
+        function initializeMapMarkers() {
+            stops.forEach((stop, index) => {
+                // Using [lat, lng] format for Leaflet
+                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
+                
+                // Display the LANDMARK NAME instead of "Bus Stop #"
+                marker.bindPopup(`<b>${stop.name}</b>`);
+                
+                marker.on('mouseover', function (e) { this.openPopup(); });
+                marker.on('mouseout', function (e) { this.closePopup(); });
+            });
+        }
+
+        function populateDropdowns() {
+            // Clear "Loading..." options
+            pickupSelect.innerHTML = '<option value="" disabled selected>-- Choose a Landmark --</option>';
+            destSelect.innerHTML = '<option value="" disabled selected>-- Choose a Landmark --</option>';
+
+            stops.forEach((stop, index) => {
+                let opt = document.createElement("option");
+                // IMPORTANT: Value is the INDEX in the 'stops' array, not the DB ID. 
+                // This keeps logic for routing simple. We access DB ID via stops[index].id later.
+                opt.value = index; 
+                opt.text = stop.name; 
+                pickupSelect.add(opt.cloneNode(true));
+                destSelect.add(opt.cloneNode(true));
+            });
+        }
+
+        // Call fetch immediately
+        fetchBusStops();
 
 
-            // Fetch and update bus positions + routes
-            async function updateBuses() {
-                const response = await fetch('get_buses.php');
-                const buses = await response.json();
+        // --- 2. SEARCH LOGIC ---
+        studentToggle.addEventListener('change', calculateFare);
+        document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
+        document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
 
-                // ---------- 1. Update bus stop popups ----------
-                stopMarkers.forEach((marker, i) => {
-                    const stop = stops[i];
-                    const busAtStop = buses.some(bus => {
-                        if (!bus.latitude || !bus.longitude) return false;
-                        return map.distance([parseFloat(bus.latitude), parseFloat(bus.longitude)], stop) <= arrivalThreshold;
+        function handleInput(e, listId, type) {
+            clearTimeout(debounceTimer);
+            const query = e.target.value;
+            const list = document.getElementById(listId);
+            if (query.length < 3) { list.style.display = 'none'; return; }
+            debounceTimer = setTimeout(() => { fetchSuggestions(query, list, type); }, 300);
+        }
+
+        async function fetchSuggestions(query, listElement, type) {
+            const viewbox = '123.70,10.50,124.10,10.10'; 
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ph&viewbox=${viewbox}&bounded=1&limit=5`;
+            try {
+                const response = await fetch(url);
+                const results = await response.json();
+                listElement.innerHTML = ''; 
+                if (results.length > 0) {
+                    listElement.style.display = 'block';
+                    results.forEach(place => {
+                        const div = document.createElement('div');
+                        const displayName = place.display_name.split(',')[0]; 
+                        const details = place.display_name.split(',').slice(1, 3).join(',');
+                        div.innerHTML = `<strong>${displayName}</strong><small>${details}</small>`;
+                        div.addEventListener('click', () => { selectFromSearch(place, type); listElement.style.display = 'none'; });
+                        listElement.appendChild(div);
                     });
-                    marker.setPopupContent(`
-                        <b>Bus Stop</b><br>
-                        Latitude: ${stop[0].toFixed(6)}<br>
-                        Longitude: ${stop[1].toFixed(6)}<br>
-                        <b>Status:</b> ${busAtStop ? "Bus has arrived!" : "No bus at stop"}
-                    `);
-                });
+                } else { listElement.style.display = 'none'; }
+            } catch (err) { console.error("Search error", err); }
+        }
 
-                // ---------- 2. Find the single closest bus ----------
-                let closestBus = null;
-                let closestDistance = Infinity;
+        function selectFromSearch(place, type) {
+            const lat = parseFloat(place.lat);
+            const lon = parseFloat(place.lon);
+            const input = document.getElementById(type + 'Input');
+            const selectBox = document.getElementById(type + 'Select');
+            const msg = document.getElementById(type + 'Msg');
+            
+            input.value = place.display_name.split(',')[0];
+            
+            let nearestIndex = -1; 
+            let minDistance = Infinity;
+            
+            // Loop through dynamic 'stops' array
+            stops.forEach((stop, index) => {
+                const dist = map.distance([lat, lon], [stop.lat, stop.lng]);
+                if (dist < minDistance) { minDistance = dist; nearestIndex = index; }
+            });
 
-                for (let bus of buses) {
-                    if (!bus.latitude || !bus.longitude) continue;
-                    const d = map.distance([parseFloat(bus.latitude), parseFloat(bus.longitude)], nearestStop);
-                    if (d < closestDistance) {
-                        closestDistance = d;
-                        closestBus = bus;
-                    }
-                }
-
-                if (!closestBus) return;
-
-                // ---------- 3. Remove all other buses & routes ----------
-                Object.keys(busMarkers).forEach(id => {
-                    if (parseInt(id) !== parseInt(closestBus.bus_id)) {
-                        map.removeLayer(busMarkers[id]);
-                        delete busMarkers[id];
-                    }
-                });
-
-                Object.keys(busRoutes).forEach(id => {
-                    if (parseInt(id) !== parseInt(closestBus.bus_id)) {
-                        map.removeLayer(busRoutes[id]);
-                        delete busRoutes[id];
-                    }
-                });
-
-                // ---------- 4. Display only the closest bus ----------
-                const busPos = [
-                    parseFloat(closestBus.latitude),
-                    parseFloat(closestBus.longitude)
-                ];
-
-                if (busMarkers[closestBus.bus_id]) {
-                    busMarkers[closestBus.bus_id].setLatLng(busPos);
-                } else {
-                    busMarkers[closestBus.bus_id] = L.marker(busPos, { icon: busIcon }).addTo(map);
-                }
-
-                // ---------- 5. Determine logical route ----------
-                // Merge very close stops for routing
-                const mergedStops = [];
-                let lastStop = null;
-                for (let stop of stops) {
-                    if (!lastStop || map.distance(stop, lastStop) > 15) { // 15 meters threshold
-                        mergedStops.push(stop);
-                        lastStop = stop;
-                    }
-                }
-
-                // Find closest stop on the merged route
-                const busIndex = mergedStops.reduce((closestIndex, stop, i) => {
-                    return map.distance(busPos, stop) < map.distance(busPos, mergedStops[closestIndex]) ? i : closestIndex;
-                }, 0);
-
-                const nearestStopIndex = mergedStops.reduce((closestIndex, stop, i) => {
-                    return map.distance(nearestStop, stop) < map.distance(nearestStop, mergedStops[closestIndex]) ? i : closestIndex;
-                }, 0);
-
-                // Slice route in correct order
-                let routeStops;
-                if (busIndex <= nearestStopIndex) {
-                    routeStops = mergedStops.slice(busIndex + 1, nearestStopIndex + 1);
-                } else {
-                    routeStops = mergedStops.slice(nearestStopIndex, busIndex).reverse();
-                }
-
-                const routePoints = [busPos, ...routeStops, nearestStop];
-
-                // ---------- 6. Build OSRM route ----------
-                const coords = routePoints.map(p => `${p[1]},${p[0]}`).join(';');
-                const routeURL = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-
-                const routeResp = await fetch(routeURL);
-                const routeData = await routeResp.json();
-
-                if (routeData.routes && routeData.routes.length > 0) {
-                    const route = routeData.routes[0];
-
-                    if (busRoutes[closestBus.bus_id]) {
-                        map.removeLayer(busRoutes[closestBus.bus_id]);
-                    }
-
-                    busRoutes[closestBus.bus_id] = L.geoJSON(route.geometry, {
-                        style: { color: 'blue', weight: 4 }
-                    }).addTo(map);
-
-                    const etaMinutes = (route.duration / 60).toFixed(1);
-                    busMarkers[closestBus.bus_id].bindPopup(`
-                        <b>Bus Plate:</b> ${closestBus.plate_number}<br>
-                        <b>Route:</b> ${closestBus.route || 'N/A'}<br>
-                        ETA to nearest stop: ${etaMinutes} min
-                    `);
-                }
+            if (nearestIndex !== -1) {
+                selectBox.value = nearestIndex;
+                const stopName = stops[nearestIndex].name;
+                msg.innerText = `Auto-selected: ${stopName} (${(minDistance / 1000).toFixed(2)}km)`;
             }
 
+            if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
+            searchMarkers[type] = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${type.toUpperCase()}</b><br>${input.value}`).openPopup();
+            map.setView([lat, lon], 14);
+            calculateFare();
+        }
 
+        pickupSelect.addEventListener('change', () => manualSelect('pickup'));
+        destSelect.addEventListener('change', () => manualSelect('dest'));
 
-            updateBuses();
-            setInterval(updateBuses, 5000); 
+        function manualSelect(type) {
+            const selectBox = document.getElementById(type + 'Select');
+            const input = document.getElementById(type + 'Input');
+            const msg = document.getElementById(type + 'Msg');
+            const index = selectBox.value;
+            const stop = stops[index];
+            
+            input.value = ""; 
+            msg.innerText = "Manual selection: " + stop.name;
+            
+            if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
+            map.setView([stop.lat, stop.lng], 14);
+            calculateFare();
+        }
+
+        // --- 3. CALCULATE & SAVE TRIP ---
+        async function calculateFare() {
+            const pickupVal = pickupSelect.value;
+            const destVal = destSelect.value;
+            const resultDisplay = document.getElementById('fareResult');
+            const isStudent = studentToggle.checked;
+
+            if (pickupVal === "" || destVal === "") return;
+            const pIndex = parseInt(pickupVal);
+            const dIndex = parseInt(destVal);
+            
+            if (pIndex === dIndex) {
+                resultDisplay.innerHTML = `₱ 0 <span class="fare-details">Start and End are same</span>`;
+                sheetTitle.innerText = "₱ 0";
+                if(currentRouteLayer) map.removeLayer(currentRouteLayer); return;
+            }
+
+            resultDisplay.innerHTML = `Calculating... <span class="fare-details">Tracing route...</span>`;
+            sheetTitle.innerText = "BUS"; 
+            if (currentRouteLayer) map.removeLayer(currentRouteLayer);
+            
+            let routeStops = [];
+            // Slice stops array based on selection
+            if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); } 
+            else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
+            
+            const coordsString = routeStops.map(s => `${s.lng},${s.lat}`).join(';');
+            const routeURL = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+            
+            try {
+                const response = await fetch(routeURL);
+                const data = await response.json();
+                if (data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const distanceKm = route.distance / 1000;
+                    
+                    let fare = 0;
+                    const excessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
+
+                    if (isStudent) {
+                        fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
+                    } else {
+                        const regularExcessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
+                        fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
+                    }
+
+                    const finalFare = Math.round(fare);
+
+                    sheetTitle.innerText = `₱ ${finalFare}`; 
+                    resultDisplay.innerHTML = `₱ ${finalFare}<span class="fare-details">Distance: ${distanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}</span>`;
+                    
+                    currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
+                    map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
+
+                    // --- SAVE TO DATABASE ---
+                    saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
+                }
+            } catch (error) { console.error(error); resultDisplay.innerHTML = `Error <span class="fare-details">Connection failed</span>`; }
+        }
+
+        async function saveTripToHistory(pickupId, dropoffId, amount) {
+            const formData = new FormData();
+            formData.append('pickup_id', pickupId);
+            formData.append('dropoff_id', dropoffId);
+            formData.append('fare', amount);
+
+            try {
+                // We don't need to wait for this response to show the price, 
+                // so we just fire and forget, or log errors in console.
+                await fetch('save_trip.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                console.log("Trip saved to history");
+            } catch(e) {
+                console.error("Could not save trip history", e);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.input-group')) { document.querySelectorAll('.suggestions-list').forEach(el => el.style.display = 'none'); }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.querySelector('.modalInfo');
-            const closeBtn = document.querySelector('.close');
-            const openBtn = document.getElementById('openModalBtn');
+            const bottomSheet = document.getElementById('bottomSheet');
+            const sheetHeader = document.getElementById('sheetHeader');
+            const sheetOverlay = document.getElementById('sheetOverlay');
 
-
-            function openModal() {
-                modal.classList.add('active');   
-                openBtn.style.display = "none";  
+            function toggleSheet() {
+                bottomSheet.classList.toggle('expanded');
+                sheetOverlay.classList.toggle('active');
             }
-
-
-            function closeModal() {
-                modal.classList.add('closing');
-                setTimeout(() => {
-                    modal.classList.remove('active'); 
-                    modal.classList.remove('closing'); 
-                    openBtn.style.display = "block";   
-                }, 300); 
-            }
-
-            openBtn.addEventListener('click', openModal);
-            closeBtn.addEventListener('click', closeModal);
-            window.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                }
+            sheetHeader.addEventListener('click', toggleSheet);
+            sheetOverlay.addEventListener('click', () => {
+                bottomSheet.classList.remove('expanded');
+                sheetOverlay.classList.remove('active');
             });
         });
-
-
     </script>
 </body>
-
 </html>
