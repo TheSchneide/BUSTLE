@@ -396,13 +396,13 @@ form {
 
     /* Login button matches register button */
     .toggle-panel .btn {
-        width: 90% !important;
+        width: 100% !important;
         max-width: 250px !important;
         background-color: #FF9A00 !important; /* same as register button */
         color: #fff !important;               /* white text */
         text-align: center !important;
         border: none !important;
-        margin: 0 auto !important;            /* center horizontally */
+        margin: 30 auto !important;            /* center horizontally */
     }
 
     .toggle-panel .btn:hover {
