@@ -200,6 +200,11 @@ if ($isLoggedIn) {
                   <?php echo $recent_trip ? number_format($recent_trip['fare_amount'], 2) : "0.00"; ?>
               </p>
           </div>
+          <div class="currentBus">    
+            <h2>Current Location</h2>
+            <p>Location</p>
+            <p>Fare: ₱</p>
+          </div>
         </div>
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
@@ -234,7 +239,6 @@ if ($isLoggedIn) {
     <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
     <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
   </footer>
-
   <script>
     const toggle = document.getElementById('menu-toggle');
     const navBar = document.getElementById('navBar');
@@ -255,7 +259,22 @@ if ($isLoggedIn) {
 
   document.querySelectorAll(".hidden-text").forEach(el => observer.observe(el));
 });
+  // Make currentBus stop above the footer
+const bus = document.querySelector('.currentBus');
+const footer = document.querySelector('footer');
 
+window.addEventListener('scroll', () => {
+  const footerTop = footer.getBoundingClientRect().top;
+  const busHeight = bus.offsetHeight;
+  
+  if (footerTop <= busHeight + 20) { // 20 = top distance
+    bus.style.position = 'absolute';
+    bus.style.top = `${window.scrollY + footerTop - busHeight}px`;
+  } else {
+    bus.style.position = 'fixed';
+    bus.style.top = '20px';
+  }
+});
 
   </script>
 </body>

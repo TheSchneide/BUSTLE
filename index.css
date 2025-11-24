@@ -166,6 +166,7 @@ hr {
     justify-content: center;
     flex-direction: column;
     padding-top: 1rem;
+    padding-bottom: 5rem;
     gap: 1rem;
 }
 .Content h2 {
@@ -307,6 +308,25 @@ hr {
   border-radius: 2rem;
   width: 80%;
   margin-top: 50px;
+}
+
+.busInfo h2 {
+  color: #4F200D;
+}
+
+.currentBus{
+  background-color: #fefefe;
+  margin: auto;
+  padding: 50px;
+  border: 1px solid #888;
+  border-radius: 2rem;
+  width: 80%;
+  margin-top: 50px;
+  position: relative;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
 }
 
 footer{
