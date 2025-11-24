@@ -85,13 +85,18 @@
         <a href="">+091234567</a>
     </footer>
     <script>
+        // --- CONFIGURATION ---
         const STUDENT_BASE_FARE = 13.00;
-        const STUDENT_BASE_DIST = 7.4;
-        const STUDENT_EXCESS_RATE = 2.56;
-        const REGULAR_BASE_FARE = STUDENT_BASE_FARE / 0.8;
+        const STUDENT_BASE_DIST = 7.4;    
+        const STUDENT_EXCESS_RATE = 2.56; 
+
+        // UPDATED: Regular Base Fare is now also 13.00 (Minimum)
+        const REGULAR_BASE_FARE = 13.00; 
+        
+        // Regular passengers still pay more per excess km (20% logic applied to distance)
         const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
 
-        const map = L.map('map').setView([10.32853, 123.9089], 13);
+        const map = L.map('map').setView([10.32853, 123.9089], 13); 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
         let stops = [];
@@ -107,12 +112,10 @@
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
 
-        // --- DRAG LOGIC VARIABLES ---
+        // --- DRAG VARIABLES ---
         let startY = 0;
-        let currentY = 0;
         let isDragging = false;
-        // Calculate the hidden position (window height - header height)
-        const getHiddenY = () => window.innerHeight - 60;
+        const getHiddenY = () => window.innerHeight - 90;
 
         // --- FETCH STOPS ---
         async function fetchBusStops() {
@@ -156,7 +159,7 @@
         function checkForAutoLocate() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('autoLocate') === 'true') {
-                openSheet(); // Use helper function
+                openSheet();
                 if (navigator.geolocation) {
                     document.getElementById('pickupInput').value = "Locating you...";
                     navigator.geolocation.getCurrentPosition(
@@ -254,6 +257,7 @@
             const destVal = destSelect.value;
             const resultDisplay = document.getElementById('fareResult');
             const isStudent = studentToggle.checked;
+
             if (pickupVal === "" || destVal === "") return;
             const pIndex = parseInt(pickupVal);
             const dIndex = parseInt(destVal);
@@ -281,14 +285,41 @@
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
                     const distanceKm = route.distance / 1000;
+                    
                     let fare = 0;
                     const excessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
-                    if (isStudent) { fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE); }
-                    else { const regularExcessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST); fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE); }
+
+                    // 1. Calculate Standard Fare (Starts at 13)
+                    if (isStudent) {
+                        fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
+                    } else {
+                        const regularExcessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
+                        fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
+                    }
+
+                    // 2. IT Park Discount (-2 pesos) with MINIMUM LIMIT
+                    const startName = stops[pIndex].name;
+                    const endName = stops[dIndex].name;
+                    
+                    if (startName === "IT Park" || endName === "IT Park") {
+                        fare = fare - 2; 
+                    }
+                    
+                    // --- NEW: FORCE MINIMUM FARE TO 13 ---
+                    // Even if discount makes it 11 or 12, push it back to 13
+                    if (fare < 13.00) {
+                        fare = 13.00;
+                    }
 
                     const finalFare = Math.round(fare);
                     sheetTitle.innerText = `₱ ${finalFare}`;
-                    resultDisplay.innerHTML = `₱ ${finalFare}<span class="fare-details">Distance: ${distanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}</span>`;
+
+                    let detailsText = `Distance: ${distanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}`;
+                    if (startName === "IT Park" || endName === "IT Park") {
+                        detailsText += " (IT Park Discount)";
+                    }
+
+                    resultDisplay.innerHTML = `₱ ${finalFare}<span class="fare-details">${detailsText}</span>`;
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
@@ -308,10 +339,7 @@
             if (!e.target.closest('.input-group')) { document.querySelectorAll('.suggestions-list').forEach(el => el.style.display = 'none'); }
         });
 
-        // --- NEW: DRAGGABLE SHEET LOGIC ---
-
-        // --- UPDATED: DRAGGABLE SHEET LOGIC ---
-
+        // --- DRAGGABLE SHEET LOGIC ---
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
@@ -323,64 +351,45 @@
             bottomSheet.style.transform = ""; 
         }
 
-        // Touch Start
         sheetHeader.addEventListener('touchstart', (e) => {
             isDragging = true;
             startY = e.touches[0].clientY;
             bottomSheet.classList.add('dragging'); 
         }, { passive: true });
 
-        // Touch Move (UPDATED)
         sheetHeader.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            
-            // KEY FIX: Stop the browser from refreshing or scrolling
             e.preventDefault(); 
-            
             const touchY = e.touches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
-
-            // Allow dragging DOWN only if expanded
             if (isExpanded && deltaY > 0) {
                  bottomSheet.style.transform = `translateY(${deltaY}px)`;
             } 
-            // Allow dragging UP (peek) only if collapsed
-            else if (!isExpanded && deltaY < 0) {
-                 // Calculate position relative to hidden state
-                 // Note: This visual feedback is optional for "peeking"
-            }
-        }, { passive: false }); // <--- IMPORTANT: passive: false is required!
+        }, { passive: false });
 
-        // Touch End
         sheetHeader.addEventListener('touchend', (e) => {
             isDragging = false;
             bottomSheet.classList.remove('dragging'); 
-            
             const touchY = e.changedTouches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
             const threshold = 100; 
-
             if (isExpanded) {
-                // If dragged down enough, close it
                 if (deltaY > threshold) closeSheet();
-                else openSheet(); // Snap back to open
+                else openSheet(); 
             } else {
-                // If dragged up enough, open it
                 if (deltaY < -threshold) openSheet();
-                else closeSheet(); // Snap back to closed
+                else closeSheet(); 
             }
         });
 
-        // Click Toggle
         sheetHeader.addEventListener('click', () => {
             if (bottomSheet.classList.contains('expanded')) closeSheet();
             else openSheet();
         });
 
         sheetOverlay.addEventListener('click', closeSheet);
-
     </script>
 </body>
 
