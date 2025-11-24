@@ -314,20 +314,27 @@ hr {
   color: #4F200D;
 }
 
-.currentBus{
-  background-color: #fefefe;
-  margin: auto;
-  padding: 50px;
-  border: 1px solid #888;
-  border-radius: 2rem;
-  width: 80%;
-  margin-top: 50px;
-  position: relative;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-}
+/* Replace your existing .currentBus css with this */
+.currentBus {
+      background-color: #fefefe;
+      margin: 30px auto;
+      padding: 50px;
+      border: 1px solid #888;
+      border-radius: 2rem;
+      width: 80%;
+      text-align: left;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      
+      /* New Interactive Styles */
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .currentBus:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      border-color: #FF9A00;
+    }
 
 footer{
     display: flex;

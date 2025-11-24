@@ -8,6 +8,8 @@ html, body {
   background: white;
   display: flex;
   flex-direction: column;
+  overscroll-behavior-y: none; 
+  touch-action: pan-x pan-y;
 }
 
 header {
@@ -65,40 +67,52 @@ header {
 }
 
 /* --- Bottom Sheet Styles --- */
-
-/* The main container for the bottom sheet */
 .bottom-sheet {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
     background: #fff;
-    border-radius: 20px 20px 0 0; /* Rounded top corners */
+    border-radius: 20px 20px 0 0;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     z-index: 1001;
-    transition: transform 0.3s ease-in-out;
-    transform: translateY(calc(100% - 60px)); /* Only show the header initially */
+    
+    /* Default state: Hiding everything except the 60px header */
+    transform: translateY(calc(100% - 60px));
+    
+    /* Smooth animation for snapping */
+    transition: transform 0.3s ease-out;
 }
 
-/* Class added by JS to expand the sheet */
+/* Class to disable animation WHILE dragging so it follows your finger instantly */
+.bottom-sheet.dragging {
+    transition: none;
+}
+
+/* Expanded State */
 .bottom-sheet.expanded {
     transform: translateY(0);
 }
 
-/* The clickable header/handle of the sheet */
 .sheet-header {
     height: 60px;
-    background: #FF9A00; /* Match your project's orange */
+    background: #FF9A00;
     border-radius: 20px 20px 0 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    cursor: grab;
     position: relative;
+    /* IMPORTANT: Prevents the browser from scrolling the page when you drag the handle */
+    touch-action: none; 
 }
 
-/* The small handle bar indicator */
+.sheet-header:active {
+    cursor: grabbing;
+}
+
+/* Rest of your CSS remains the same... */
 .sheet-handle-bar {
     width: 40px;
     height: 4px;
@@ -106,25 +120,19 @@ header {
     border-radius: 2px;
     margin-bottom: 5px;
 }
-
-/* The "BUS" text */
 .sheet-title {
     font-family: 'Caprasimo', cursive;
     font-size: 1.2rem;
     color: #4F200D;
     margin: 0;
 }
-
-/* The container for the form content */
 .sheet-content {
     padding: 25px;
     background: #fff;
     overflow-y: auto;
-    /* Max height for smaller screens to allow scrolling */
-    max-height: calc(100vh - 100px); 
+    /* Prevent content from being hidden behind header calculation */
+    height: 70vh; 
 }
-
-/* Background overlay when sheet is expanded */
 .sheet-overlay {
     position: fixed;
     top: 0;
@@ -134,29 +142,12 @@ header {
     background: rgba(0,0,0,0.5);
     z-index: 1000;
     opacity: 0;
-    pointer-events: none; /* Allow clicks to pass through when hidden */
+    pointer-events: none;
     transition: opacity 0.3s ease-in-out;
 }
-
-/* Show overlay when sheet is expanded */
 .sheet-overlay.active {
     opacity: 1;
-    pointer-events: auto; /* Catch clicks to close */
-}
-
-
-.close {
-  color: #aaaaaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-  color: #000;
-  text-decoration: none;
-  cursor: pointer;
+    pointer-events: auto;
 }
 
 footer {

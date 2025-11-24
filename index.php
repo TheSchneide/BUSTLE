@@ -1,11 +1,10 @@
 <?php
 session_start();
-include 'Database.php'; // Include your database connection
+include 'Database.php';
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
 
-// --- NEW CODE: Fetch from Database ---
 $recent_trip = null;
 
 if ($isLoggedIn) {
@@ -13,7 +12,6 @@ if ($isLoggedIn) {
     $conn = $db->getConnection();
     $user_id = $_SESSION['user_id'];
 
-    // Query to get the last trip + stop names
     $sql = "SELECT 
                 t.fare_amount, 
                 p.stop_name AS pickup_name, 
@@ -34,7 +32,6 @@ if ($isLoggedIn) {
         $recent_trip = $result->fetch_assoc();
     }
 }
-// -------------------------------------
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -83,6 +80,28 @@ if ($isLoggedIn) {
     }
     .menu-toggle.active span:nth-child(3) {
       transform: rotate(-45deg) translate(4px, -4px);
+    }
+    
+    /* Current Bus / Location Box Styles */
+    .currentBus {
+      background-color: #fefefe;
+      margin: 30px auto;
+      padding: 50px;
+      border: 1px solid #888;
+      border-radius: 2rem;
+      width: 80%;
+      text-align: left;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      
+      /* Interactive Styles */
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .currentBus:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      border-color: #FF9A00;
     }
 
     @media (max-width: 768px) {
@@ -184,9 +203,9 @@ if ($isLoggedIn) {
   </header>
 
   <div class="Content">
-        <!--if logged in-->
       <?php if($isLoggedIn): ?>
         <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span></h2>
+        
         <div class="bussin">
           <div class="busInfo">
               <h2>Recently Viewed</h2>
@@ -197,48 +216,55 @@ if ($isLoggedIn) {
                   <?php echo $recent_trip ? htmlspecialchars($recent_trip['dropoff_name']) : "No recent trip"; ?>
               </p>
               <p><strong>Fare:</strong> ₱ 
-                  <?php echo $recent_trip ? number_format($recent_trip['fare_amount'], 2) : "0.00"; ?>
+                  <?php echo $recent_trip ? number_format($recent_trip['fare_amount'], 0) : "0"; ?>
               </p>
           </div>
-          <div class="currentBus">    
-            <h2>Current Location</h2>
-            <p>Location</p>
-            <p>Fare: ₱</p>
+
+          <div class="currentBus" onclick="window.location.href='Tracker.html?autoLocate=true'">    
+            <h2>Your Current Location</h2>
+            <p id="userAddress">Locating...</p>
+            <p id="userCoords" style="font-size: 0.8rem; color: #888;">Waiting for permission...</p>
+            <p style="font-size: 0.9rem; color: #FF9A00; font-weight: bold; margin-top: 10px;">
+                Tap to use as Pick-up →
+            </p>
           </div>
         </div>
+
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
         <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
         <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
         <section class="info">
-    <div class="info-text">
-      <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
-      <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
-      <p class="hidden-text" data-anim="fade-left"> 
-        Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
-        running around looking for buses, students can track arrivals in real time.
-      </p>
-    </div>
-    <div class="info-img">
-      <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
-    </div>
-  </section>
-  <hr class="hidden-text" data-anim="fade-up">
-  <section class="aboutUs">
-    <div class="about">
-      <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
-      <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
-      <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
-      take—saving time, reducing stress, and making sure you never miss class again</p>
-    </div>
-  </section>
+          <div class="info-text">
+            <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
+            <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
+            <p class="hidden-text" data-anim="fade-left"> 
+              Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
+              running around looking for buses, students can track arrivals in real time.
+            </p>
+          </div>
+          <div class="info-img">
+            <img src="bustle(2).png" alt="students illustration" class="hidden-text" data-anim="fade-left">
+          </div>
+        </section>
+        <hr class="hidden-text" data-anim="fade-up">
+        <section class="aboutUs">
+          <div class="about">
+            <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
+            <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
+            <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
+            take—saving time, reducing stress, and making sure you never miss class again</p>
+          </div>
+        </section>
       <?php endif; ?>
   </div>
+
   <footer>
     <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
     <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
     <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
   </footer>
+
   <script>
     const toggle = document.getElementById('menu-toggle');
     const navBar = document.getElementById('navBar');
@@ -249,33 +275,53 @@ if ($isLoggedIn) {
     });
 
     document.addEventListener("DOMContentLoaded", () => {
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add("show");
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("show");
+          }
+        });
+      }, { threshold: 0.2 });
+
+      document.querySelectorAll(".hidden-text").forEach(el => observer.observe(el));
+      
+      // -- KEY PART: THIS RESTORES THE LOCATION DISPLAY --
+      if(document.getElementById('userAddress')) {
+          if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(successLoc, errorLoc);
+          } else {
+              document.getElementById('userAddress').innerText = "Geolocation not supported";
+          }
       }
     });
-  }, { threshold: 0.2 });
 
-  document.querySelectorAll(".hidden-text").forEach(el => observer.observe(el));
-});
-  // Make currentBus stop above the footer
-const bus = document.querySelector('.currentBus');
-const footer = document.querySelector('footer');
+    // Geolocation Success
+    async function successLoc(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        document.getElementById('userCoords').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        document.getElementById('userAddress').innerText = "Fetching address...";
 
-window.addEventListener('scroll', () => {
-  const footerTop = footer.getBoundingClientRect().top;
-  const busHeight = bus.offsetHeight;
-  
-  if (footerTop <= busHeight + 20) { // 20 = top distance
-    bus.style.position = 'absolute';
-    bus.style.top = `${window.scrollY + footerTop - busHeight}px`;
-  } else {
-    bus.style.position = 'fixed';
-    bus.style.top = '20px';
-  }
-});
+        try {
+            // Reverse Geocode to show "City, Street"
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            let address = data.display_name;
+            if(data.address) {
+                 address = (data.address.road || "") + ", " + (data.address.city || data.address.town || data.address.municipality || "");
+            }
+            document.getElementById('userAddress').innerText = address || data.display_name;
+        } catch(e) {
+            document.getElementById('userAddress').innerText = "Address unavailable";
+        }
+    }
 
+    function errorLoc() {
+        document.getElementById('userAddress').innerText = "Location permission denied";
+        document.getElementById('userCoords').innerText = "";
+    }
   </script>
 </body>
 </html>
