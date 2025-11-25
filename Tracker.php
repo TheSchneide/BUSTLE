@@ -125,10 +125,79 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         }
         .badge-active { background: #FF9A00; color: white; }
         .badge-regular { background: #ccc; color: #666; }
+
+        /* --- 5. RUSH HOUR NOTIFICATION STYLES --- */
+        .rush-hour-banner {
+            position: fixed;
+            top: -100px; /* Start hidden above screen */
+            left: 0;
+            width: 100%;
+            background: linear-gradient(90deg, #d32f2f, #f44336);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            z-index: 2000; /* Above everything */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            transition: top 0.5s ease-in-out;
+            font-family: 'Outfit', sans-serif;
+            box-sizing: border-box;
+        }
+        
+        .rush-hour-banner.show {
+            top: 0;
+        }
+
+        .rush-content {
+            flex: 1;
+            text-align: center;
+        }
+
+        .rush-title {
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 1rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .rush-msg {
+            font-size: 0.9rem;
+            opacity: 0.95;
+        }
+
+        .rush-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .rush-close:hover {
+            background: rgba(255,255,255,0.4);
+        }
     </style>
 </head>
 
 <body>
+    <!-- RUSH HOUR BANNER -->
+    <div id="rushHourBanner" class="rush-hour-banner">
+        <div style="font-size: 24px;">⚠️</div>
+        <div class="rush-content">
+            <span class="rush-title">Rush Hour Alert</span>
+            <span class="rush-msg">Expect heavy traffic. Seats may not be available immediately.</span>
+        </div>
+        <button class="rush-close" onclick="closeRushBanner()">✕</button>
+    </div>
+
     <header>
         <div class="Navigation">
             <div id="logo" data-anim="fade-up">
@@ -273,6 +342,35 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         let startY = 0;
         let isDragging = false;
         const getHiddenY = () => window.innerHeight - 90;
+
+        // --- RUSH HOUR LOGIC ---
+        function checkRushHour() {
+            const now = new Date();
+            const hour = now.getHours(); // 0-23
+            const banner = document.getElementById('rushHourBanner');
+
+            // Define Rush Hours: 
+            // Morning: 6 AM - 9 AM (6, 8)
+            // Evening: 4 PM - 8 PM (16, 17, 18, 19)
+            const isMorningRush = (hour >= 6 && hour < 9);
+            const isEveningRush = (hour >= 16 && hour < 20);
+
+            if (isMorningRush || isEveningRush) {
+                // Add a small delay for better UX (so it slides in)
+                setTimeout(() => {
+                    banner.classList.add('show');
+                }, 1000);
+            }
+        }
+
+        function closeRushBanner() {
+            const banner = document.getElementById('rushHourBanner');
+            banner.classList.remove('show');
+        }
+
+        // Call immediately on load
+        checkRushHour();
+
 
         // --- 1. FETCH STOPS ---
         async function fetchBusStops() {
