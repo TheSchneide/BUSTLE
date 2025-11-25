@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'Database.php';
+include 'Trip.php'; // 1. Include the new Class
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
@@ -8,29 +9,13 @@ $username = $isLoggedIn ? $_SESSION['username'] : '';
 $recent_trip = null;
 
 if ($isLoggedIn) {
+    // 2. OOP Implementation
+    // We create the DB object, then pass it to the Trip object
     $db = new Database();
-    $conn = $db->getConnection();
-    $user_id = $_SESSION['user_id'];
-
-    $sql = "SELECT 
-                t.fare_amount, 
-                p.stop_name AS pickup_name, 
-                d.stop_name AS dropoff_name
-            FROM user_trips t
-            JOIN bus_stops p ON t.pickup_stop_id = p.stop_id
-            JOIN bus_stops d ON t.dropoff_stop_id = d.stop_id
-            WHERE t.user_id = ? 
-            ORDER BY t.trip_id DESC 
-            LIMIT 1";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        $recent_trip = $result->fetch_assoc();
-    }
+    $trip = new Trip($db->getConnection());
+    
+    // 3. We just ask the object for the data. No SQL here!
+    $recent_trip = $trip->getMostRecent($_SESSION['user_id']);
 }
 ?>
 <!DOCTYPE html>
@@ -260,7 +245,7 @@ if ($isLoggedIn) {
   </div>
 
   <footer>
-    <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.com</a>
+    <a href="index.php" class="hidden-text" data-anim="fade-up">@Bustle.dcism.org</a>
     <a href="" class="hidden-text" data-anim="fade-up">BustleCrew@gmail.com</a>
     <a href="" class="hidden-text" data-anim="fade-up">+091234567</a>
   </footer>
@@ -285,7 +270,6 @@ if ($isLoggedIn) {
 
       document.querySelectorAll(".hidden-text").forEach(el => observer.observe(el));
       
-      // -- KEY PART: THIS RESTORES THE LOCATION DISPLAY --
       if(document.getElementById('userAddress')) {
           if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(successLoc, errorLoc);
@@ -295,7 +279,6 @@ if ($isLoggedIn) {
       }
     });
 
-    // Geolocation Success
     async function successLoc(position) {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
@@ -303,7 +286,6 @@ if ($isLoggedIn) {
         document.getElementById('userAddress').innerText = "Fetching address...";
 
         try {
-            // Reverse Geocode to show "City, Street"
             const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
             const response = await fetch(url);
             const data = await response.json();
