@@ -1,21 +1,26 @@
 <?php
 session_start();
 include 'Database.php';
-include 'Trip.php'; // 1. Include the new Class
+include 'Trip.php'; 
+include 'SavedRoute.php'; // 1. Include the new Class
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
 
 $recent_trip = null;
+$saved_route = null;
 
 if ($isLoggedIn) {
-    // 2. OOP Implementation
-    // We create the DB object, then pass it to the Trip object
     $db = new Database();
-    $trip = new Trip($db->getConnection());
-    
-    // 3. We just ask the object for the data. No SQL here!
+    $conn = $db->getConnection(); // Get connection to pass around
+
+    // 2. Use Trip Class
+    $trip = new Trip($conn);
     $recent_trip = $trip->getMostRecent($_SESSION['user_id']);
+
+    // 3. Use SavedRoute Class
+    $savedRouteObj = new SavedRoute($conn);
+    $saved_route = $savedRouteObj->get($_SESSION['user_id']);
 }
 ?>
 <!DOCTYPE html>
@@ -89,6 +94,27 @@ if ($isLoggedIn) {
       border-color: #FF9A00;
     }
 
+    /* Saved Route Card Style */
+    .savedRouteBtn {
+        background-color: #FF9A00; /* Orange to make it distinct */
+        color: white;
+        margin: 20px auto;
+        padding: 30px;
+        border-radius: 2rem;
+        width: 80%;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.2s;
+        border: 2px solid #e08900;
+    }
+    .savedRouteBtn:hover {
+        transform: scale(1.02);
+        background-color: #ff8c00;
+    }
+    .savedRouteBtn h3 { margin: 0; font-family: Caprasimo; font-size: 1.5rem; }
+    .savedRouteBtn p { font-size: 1rem; margin-top: 5px; color: #4F200D; font-weight: bold; }
+
     @media (max-width: 768px) {
       #navBar {
         display: flex;
@@ -142,6 +168,11 @@ if ($isLoggedIn) {
         width: 90%;
         height: auto;
       }
+
+      .busInfo, .currentBus {
+            padding: 25px;
+            border-radius: 1.5rem;
+        }
 
       .aboutUs {
         padding: 40px 20px;
@@ -213,6 +244,12 @@ if ($isLoggedIn) {
                 Tap to use as Pick-up →
             </p>
           </div>
+          <?php if($saved_route): ?>
+            <div class="savedRouteBtn" onclick="window.location.href='Tracker.html?savedPickup=<?= $saved_route['pickup_stop_id'] ?>&savedDropoff=<?= $saved_route['dropoff_stop_id'] ?>'">
+                <h3>★ Saved Route</h3>
+                <p><?= htmlspecialchars($saved_route['pickup_name']) ?> ➝ <?= htmlspecialchars($saved_route['dropoff_name']) ?></p>
+            </div>
+          <?php endif; ?>
         </div>
 
       <?php else: ?>
