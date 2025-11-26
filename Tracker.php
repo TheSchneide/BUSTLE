@@ -125,32 +125,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         }
         .badge-active { background: #FF9A00; color: white; }
         .badge-regular { background: #ccc; color: #666; }
-
-        /* 5. Ticket Style Fare Result */
-        .fare-display {
-            background-color: #FF9A00; 
-            color: #4F200D;
-            padding: 20px 25px;
-            border-radius: 16px;
-            margin-top: 25px;
-            position: relative;
-            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
-            font-family: 'Outfit', sans-serif;
-            text-align: left;
-        }
-        .fd-header { text-align: center; margin-bottom: 15px; position: relative; }
-        .fd-handle { width: 30px; height: 3px; background: #4F200D; opacity: 0.8; border-radius: 2px; margin: 0 auto 8px auto; }
-        .fd-title { font-weight: 800; font-size: 14px; letter-spacing: 1px; margin: 0; text-transform: uppercase; }
-        .fd-heart { position: absolute; top: 0; left: 0; font-size: 20px; opacity: 0.5; }
-        .fd-body { display: flex; justify-content: space-between; align-items: flex-end; }
-        .fd-route { flex: 1; padding-right: 10px; display: flex; flex-direction: column; gap: 2px; }
-        .fd-label { font-weight: 800; font-size: 14px; color: #4F200D; display: inline-block; width: 50px; }
-        .fd-address { font-size: 14px; font-weight: 400; opacity: 0.9; }
-        .fd-arrow { font-size: 14px; color: #4F200D; margin-left: 18px; margin-top: -2px; margin-bottom: -2px; }
-        .fd-info { text-align: right; min-width: 100px; margin-bottom: 10px;}
-        .fd-info-label { font-size: 12px; opacity: 0.7; margin-bottom: 4px; display: block; }
-        .fd-price { font-size: 32px; font-weight: 800; line-height: 1; display: block; }
-        .fd-time { font-size: 13px; font-weight: 600; margin-top: 6px; display: block; opacity: 0.8; }
     </style>
 </head>
 
@@ -180,7 +154,10 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 
             <div class="input-group">
                 <div class="header-row">
-                    <label class="input-label">Pick-up Point</label>
+                    <div>
+                        <label class="input-label" style="display:inline;">Pick-up Point</label>
+                        <button class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Map</button>
+                    </div>
                     <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
                 </div>
 
@@ -200,7 +177,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
 
             <div class="input-group">
-                <label class="input-label">Destination</label>
+                <div class="header-row">
+                    <div>
+                        <label class="input-label" style="display:inline;">Destination</label>
+                        <button class="map-pick-btn" onclick="startPickingLocation('dest')">📍 Map</button>
+                    </div>
+                </div>
                 <input type="text" id="destInput" class="clean-input" placeholder="Search location..." autocomplete="off">
                 <div id="destSuggestions" class="suggestions-list"></div>
                 <div class="divider"><span>OR SELECT LANDMARK</span></div>
@@ -225,6 +207,18 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             <div id="fareResult" class="fare-display">
                 ₱ 0
                 <span class="fare-details">Select locations to calculate</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Confirmation Modal -->
+    <div id="mapConfirmOverlay" class="confirm-overlay">
+        <div class="confirm-modal">
+            <h3>Confirm Stop</h3>
+            <p id="confirmText">Use this stop as your location?</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel" onclick="cancelStopSelection()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmStopSelection()">Confirm</button>
             </div>
         </div>
     </div>
@@ -265,6 +259,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         const sheetHeader = document.getElementById('sheetHeader');
         const sheetOverlay = document.getElementById('sheetOverlay');
 
+        // New Elements for Map Picking
+        const mapConfirmOverlay = document.getElementById('mapConfirmOverlay');
+        const confirmText = document.getElementById('confirmText');
+        let pickingMode = null; // 'pickup' or 'dest' or null
+        let tempSelectedStopIndex = -1;
+
         let currentRouteLayer = null;
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
@@ -294,9 +294,28 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
                 const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
-                marker.bindPopup(`<b>${stop.name}</b>`);
-                marker.on('mouseover', function (e) { this.openPopup(); });
-                marker.on('mouseout', function (e) { this.closePopup(); });
+                
+                // --- NEW LOGIC FOR MARKER CLICK ---
+                marker.on('click', function(e) {
+                    if (pickingMode) {
+                        // In picking mode: Show Custom Confirmation
+                        showStopConfirmation(index);
+                        // Prevent map flyto or default popup behavior if needed
+                        L.DomEvent.stopPropagation(e);
+                    } else {
+                        // Normal mode: Show standard popup
+                        this.bindPopup(`<b>${stop.name}</b>`).openPopup();
+                    }
+                });
+                
+                marker.on('mouseover', function (e) { 
+                    if(!pickingMode) { // Only show popup on hover if not picking
+                        this.bindPopup(`<b>${stop.name}</b>`).openPopup(); 
+                    }
+                });
+                marker.on('mouseout', function (e) { 
+                    this.closePopup(); 
+                });
             });
         }
 
@@ -309,6 +328,59 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 pickupSelect.add(opt.cloneNode(true)); destSelect.add(opt.cloneNode(true));
             });
         }
+
+        // --- NEW: PICK ON MAP LOGIC ---
+
+        function startPickingLocation(type) {
+            pickingMode = type;
+            closeSheet();
+            // Optional: Toast or small hint could go here
+            console.log("Pick mode started for: " + type);
+        }
+
+        function showStopConfirmation(index) {
+            tempSelectedStopIndex = index;
+            const stopName = stops[index].name;
+            const modeName = pickingMode === 'pickup' ? "Pick-up" : "Destination";
+            
+            confirmText.innerText = `Set "${stopName}" as your ${modeName}?`;
+            mapConfirmOverlay.classList.add('active');
+        }
+
+        function confirmStopSelection() {
+            if (tempSelectedStopIndex === -1 || !pickingMode) return;
+
+            // Set the value based on mode
+            if (pickingMode === 'pickup') {
+                pickupSelect.value = tempSelectedStopIndex;
+                manualSelect('pickup', false); // false = don't double calculate yet
+            } else {
+                destSelect.value = tempSelectedStopIndex;
+                manualSelect('dest', false);
+            }
+
+            // Clean up
+            mapConfirmOverlay.classList.remove('active');
+            pickingMode = null;
+            tempSelectedStopIndex = -1;
+
+            // Re-open sheet and calculate
+            openSheet();
+            calculateFare();
+        }
+
+        function cancelStopSelection() {
+            // Just close the confirmation modal, user is still in picking mode
+            // Or, per requirement: "opens bottom sheet back up and cancels feature"
+            
+            mapConfirmOverlay.classList.remove('active');
+            
+            // Per instructions: "If they decline, it opens the bottom sheet back up and cancels the feature"
+            pickingMode = null;
+            tempSelectedStopIndex = -1;
+            openSheet();
+        }
+
 
         // --- 2. SWAP LOGIC ---
         swapBtn.addEventListener('click', () => {
@@ -517,7 +589,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     if (fare < 13.00) { fare = 13.00; }
 
                     const finalFare = Math.round(fare);
-                    sheetTitle.innerText = `₱ ${finalFare}`;
+                    sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
 
                     // Ticket Style Output
                     const safeStart = startName.length > 15 ? startName.substring(0, 15) + '...' : startName;
@@ -612,6 +684,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
             bottomSheet.style.transform = ""; 
+            
+            // --- NEW: Cancel picking mode if user manually opens sheet ---
+            if(pickingMode) {
+                pickingMode = null;
+                console.log("Picking mode cancelled by manual sheet open");
+            }
         }
         function closeSheet() {
             bottomSheet.classList.remove('expanded');
