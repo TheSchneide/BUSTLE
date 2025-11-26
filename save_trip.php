@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fare = $_POST['fare'];
 
     // This now triggers the "Insert or Update" logic in Trip.php
-    if ($trip->create($user_id, $pickup_id, $dropoff_id, $fare)) {
+    if ($trip->save($user_id, $pickup_id, $dropoff_id, $fare)) {
         echo json_encode(['status' => 'success', 'message' => 'Trip history updated']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Database error']);

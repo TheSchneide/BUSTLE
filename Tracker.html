@@ -241,7 +241,7 @@
 
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
-                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
+                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 10 }).addTo(map);
                 marker.bindPopup(`<b>${stop.name}</b>`);
                 marker.on('mouseover', function (e) { this.openPopup(); });
                 marker.on('mouseout', function (e) { this.closePopup(); });
