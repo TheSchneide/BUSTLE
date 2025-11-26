@@ -350,9 +350,9 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const banner = document.getElementById('rushHourBanner');
 
             // Define Rush Hours: 
-            // Morning: 6 AM - 9 AM (6, 8)
+            // Morning: 7 AM - 9 AM (7, 8)
             // Evening: 4 PM - 8 PM (16, 17, 18, 19)
-            const isMorningRush = (hour >= 6 && hour < 9);
+            const isMorningRush = (hour >= 7 && hour < 9);
             const isEveningRush = (hour >= 16 && hour < 20);
 
             if (isMorningRush || isEveningRush) {
@@ -595,14 +595,121 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             updateSavedRoute();
         });
 
+        // --- 5. HELPER: COMPUTE FARE MATH (UPDATED) ---
+        function computeFareValue(distKm, startName, endName) {
+            const isStudent = IS_DISCOUNTED;
+            let billableDistance = distKm;
 
-        // --- 5. CALCULATE FARE ---
+            // 0.6km reduction for IT Park
+            if (startName === "IT Park" || endName === "IT Park") {
+                billableDistance = Math.max(0, distKm - 0.6); 
+            }
+
+            let fare = 0;
+            if (isStudent) {
+                const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
+                fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
+                
+                // 1. FIXED RATE: IT Park -> Mactan Newtown ONLY (41)
+                if (startName === "IT Park" && endName === "Mactan Newtown") {
+                    fare = 41; 
+                }
+
+                // 2. SPECIAL CAPS for Students
+                if (startName === "Mactan Newtown") {
+                    if (fare > 31) fare = 41;
+                }
+                if (startName === "NFA") {
+                    if (fare > 34) fare = 39;
+                }
+
+            } else {
+                // Regular Logic
+                const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
+                fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
+                
+                // FIXED RATE: IT Park -> Mactan Newtown ONLY (51)
+                if (startName === "IT Park" && endName === "Mactan Newtown") {
+                    fare = 51; 
+                }
+            }
+
+            // Minimum Floor
+            if (fare < 13.00) fare = 13.00;
+            
+            return Math.round(fare);
+        }
+
+        // --- 6. NEW: CALCULATE RANGE (Only Pickup Selected) ---
+        async function calculateRange(pIndex) {
+            const pickupStop = stops[pIndex];
+            if (!pickupStop) return;
+
+            // Update UI to "Loading" state
+            document.getElementById('fareResult').innerHTML = `<div style="padding:10px; text-align:center;">Calculating range...</div>`;
+            
+            // 1. Find farthest stop via Straight Line (to minimize API calls)
+            let maxDist = 0;
+            let farthestIndex = -1;
+
+            stops.forEach((stop, i) => {
+                if (i == pIndex) return;
+                const dist = map.distance([pickupStop.lat, pickupStop.lng], [stop.lat, stop.lng]);
+                if (dist > maxDist) {
+                    maxDist = dist;
+                    farthestIndex = i;
+                }
+            });
+
+            if (farthestIndex === -1) return; // Should not happen if >1 stop
+
+            // 2. Fetch OSRM for that ONE farthest stop to get accurate Max Fare
+            const destStop = stops[farthestIndex];
+            const coordsString = `${pickupStop.lng},${pickupStop.lat};${destStop.lng},${destStop.lat}`;
+            const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=false`;
+
+            try {
+                const response = await fetch(routeURL);
+                const data = await response.json();
+                
+                if (data.routes && data.routes.length > 0) {
+                    const distKm = data.routes[0].distance / 1000;
+                    const maxFare = computeFareValue(distKm, pickupStop.name, destStop.name);
+                    const minFare = 13; // Base fare is almost always the minimum
+
+                    // Update UI
+                    const rangeText = `₱ ${minFare} - ₱ ${maxFare}`;
+                    sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">${rangeText}</span>`;
+                    
+                    document.getElementById('fareResult').innerHTML = `
+                        <div class="fd-body" style="justify-content: center;">
+                            <div class="fd-info" style="text-align: center; width: 100%;">
+                                <span class="fd-info-label">Estimated Fare Range</span>
+                                <span class="fd-price">${rangeText}</span>
+                                <span class="fd-time" style="font-weight:normal; font-size: 0.9rem; opacity: 0.8;">From ${pickupStop.name}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch(e) {
+                console.error("Range calc error", e);
+            }
+        }
+
+
+        // --- 7. CALCULATE FARE (Updated to use Helper) ---
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
             const resultDisplay = document.getElementById('fareResult');
             
-            const isStudent = IS_DISCOUNTED; 
+            // IF PICKUP IS SET BUT DESTINATION IS EMPTY -> SHOW RANGE
+            if (pickupVal !== "" && destVal === "") {
+                calculateRange(parseInt(pickupVal));
+                saveRouteBtn.disabled = true;
+                saveRouteBtn.classList.remove('active');
+                return;
+            }
 
             if (pickupVal === "" || destVal === "") {
                 saveRouteBtn.disabled = true;
@@ -656,37 +763,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                         timeString = `${hrs} hr ${mins} min`;
                     }
 
-                    // Discount Logic
                     const startName = stops[pIndex].name;
                     const endName = stops[dIndex].name;
-                    
-                    let billableDistance = actualDistanceKm;
 
-                    // 0.6km reduction for IT Park (Corrected from 0.8)
-                    if (startName === "IT Park" || endName === "IT Park") {
-                        billableDistance = Math.max(0, actualDistanceKm - 0.6); 
-                    }
+                    // USE HELPER FOR FARE MATH
+                    const finalFare = computeFareValue(actualDistanceKm, startName, endName);
 
-                    let fare = 0;
-                    const excessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
-
-                    if (isStudent) {
-                        fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
-                        if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
-                            fare = 41; 
-                        }
-                    } else {
-                        const regularExcessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
-                        fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
-                        if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
-                            fare = 51; 
-                        }
-                    }
-
-                    // Minimum Fare Floor
-                    if (fare < 13.00) { fare = 13.00; }
-
-                    const finalFare = Math.round(fare);
                     sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
 
                     // Ticket Style Output
