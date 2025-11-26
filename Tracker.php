@@ -1,9 +1,22 @@
+<?php
+session_start();
+
+// redirect if not logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.html");
+    exit();
+}
+
+// Check discount status set during login
+$isDiscounted = isset($_SESSION['is_discounted']) && $_SESSION['is_discounted'] === true;
+$discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : "Regular";
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bustle - Fare Calculator</title>
     <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -11,7 +24,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="">
         </script>
-
+    
     <style>
         .swap-container {
             width: 50%;
@@ -62,6 +75,33 @@
         /* Remove bottom margin from label since the row handles it */
         .header-row .input-label {
             margin-bottom: 0;
+        }
+
+        .info-badge-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            border: 1px solid #eee;
+            opacity: 0.9;
+        }
+        .info-badge {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .badge-active {
+            background: #FF9A00;
+            color: white;
+        }
+        .badge-regular {
+            background: #ccc;
+            color: #666;
         }
 
         /* --- Star Save Button --- */
@@ -135,8 +175,7 @@
                     <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
                 </div>
 
-                <input type="text" id="pickupInput" class="clean-input" placeholder="Search location..."
-                    autocomplete="off">
+                <input type="text" id="pickupInput" class="clean-input" placeholder="Search location..." autocomplete="off">
                 <div id="pickupSuggestions" class="suggestions-list"></div>
                 <div class="divider"><span>OR SELECT LANDMARK</span></div>
                 <select id="pickupSelect" class="styled-select">
@@ -153,8 +192,7 @@
 
             <div class="input-group">
                 <label class="input-label">Destination</label>
-                <input type="text" id="destInput" class="clean-input" placeholder="Search location..."
-                    autocomplete="off">
+                <input type="text" id="destInput" class="clean-input" placeholder="Search location..." autocomplete="off">
                 <div id="destSuggestions" class="suggestions-list"></div>
                 <div class="divider"><span>OR SELECT LANDMARK</span></div>
                 <select id="destSelect" class="styled-select">
@@ -163,25 +201,17 @@
                 <div id="destMsg" class="helper-text"></div>
             </div>
 
-            <div class="toggle-container" style="opacity: 0.8; background: #f0f0f0; cursor: default;">
+            <div class="info-badge-container">
                 <div class="toggle-label">
                     Passenger Type
                     <span class="toggle-sublabel">
-                        <?php 
-                            // Display the type calculated during login
-                            echo isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : "Regular"; 
-                        ?>
+                        <?php echo htmlspecialchars($discountLabel); ?>
                     </span>
                 </div>
-                <div style="padding: 5px 15px; border-radius: 15px; font-weight: bold; font-size: 0.8rem; 
-                    background: <?php echo ($_SESSION['is_discounted'] ?? false) ? '#FF9A00' : '#ccc'; ?>; 
-                    color: <?php echo ($_SESSION['is_discounted'] ?? false) ? 'white' : '#666'; ?>;">
-                    <?php echo ($_SESSION['is_discounted'] ?? false) ? '20% OFF' : 'STANDARD'; ?>
+                <div class="info-badge <?php echo $isDiscounted ? 'badge-active' : 'badge-regular'; ?>">
+                    <?php echo $isDiscounted ? '20% OFF' : 'STANDARD'; ?>
                 </div>
             </div>
-        
-            <div class="toggle-container">
-                </div>
 
             <div id="fareResult" class="fare-display">
                 ₱ 0
@@ -203,11 +233,11 @@
         const STUDENT_EXCESS_RATE = 2.56;
         const REGULAR_BASE_FARE = 13.00;
         const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
-    
-        // --- AUTOMATIC DISCOUNT LOGIC ---
-        // We inject the PHP session value directly into JS
-        const IS_DISCOUNTED = <?php echo ($_SESSION['is_discounted'] ?? false) ? 'true' : 'false'; ?>;
-    
+
+        // --- PHP TO JS INJECTION ---
+        // This replaces the need for the toggle check
+        const IS_DISCOUNTED = <?php echo $isDiscounted ? 'true' : 'false'; ?>;
+
         const map = L.map('map').setView([10.32853, 123.9089], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
@@ -216,11 +246,12 @@
         const destSelect = document.getElementById('destSelect');
         const pickupInput = document.getElementById('pickupInput');
         const destInput = document.getElementById('destInput');
-        const studentToggle = document.getElementById('studentToggle');
-
-        const saveRouteBtn = document.getElementById('saveRouteBtn');
+        
+        // REMOVED: const studentToggle ... (This caused the error)
+        
+        const saveRouteBtn = document.getElementById('saveRouteBtn'); // Star button
         const swapBtn = document.getElementById('swapBtn');
-
+        
         const sheetTitle = document.getElementById('sheetTitle');
         const bottomSheet = document.getElementById('bottomSheet');
         const sheetHeader = document.getElementById('sheetHeader');
@@ -254,7 +285,7 @@
 
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
-                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 10 }).addTo(map);
+                const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
                 marker.bindPopup(`<b>${stop.name}</b>`);
                 marker.on('mouseover', function (e) { this.openPopup(); });
                 marker.on('mouseout', function (e) { this.closePopup(); });
@@ -284,8 +315,8 @@
             if (searchMarkers['pickup']) map.removeLayer(searchMarkers['pickup']);
             if (searchMarkers['dest']) map.removeLayer(searchMarkers['dest']);
 
-            if (pickupSelect.value !== "") manualSelect('pickup', false);
-            if (destSelect.value !== "") manualSelect('dest', false);
+            if(pickupSelect.value !== "") manualSelect('pickup', false);
+            if(destSelect.value !== "") manualSelect('dest', false);
 
             calculateFare();
         });
@@ -306,11 +337,11 @@
                     openSheet();
                     pickupSelect.value = pIndex;
                     destSelect.value = dIndex;
-
-                    // Light up star (Filled)
+                    
+                    // Set Star Active
                     saveRouteBtn.classList.add('active');
                     saveRouteBtn.disabled = false;
-
+                    
                     calculateFare();
                 }
             }
@@ -354,15 +385,14 @@
             }
         }
 
-        // --- SAVE ROUTE LOGIC (STAR BUTTON) ---
+        // --- SAVE ROUTE LOGIC ---
         async function updateSavedRoute() {
             const pIndex = pickupSelect.value;
             const dIndex = destSelect.value;
-
+            
             if (pIndex === "" || dIndex === "") return;
 
             const action = saveRouteBtn.classList.contains('active') ? 'save' : 'remove';
-
             const formData = new FormData();
             formData.append('pickup_id', stops[pIndex].id);
             formData.append('dropoff_id', stops[dIndex].id);
@@ -371,36 +401,34 @@
             try {
                 await fetch('save_route.php', { method: 'POST', body: formData });
                 console.log("Saved route updated: " + action);
-            } catch (e) { console.error(e); }
+            } catch(e) { console.error(e); }
         }
 
         saveRouteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-
             if (saveRouteBtn.classList.contains('active')) {
-                saveRouteBtn.classList.remove('active'); // Turn off (Outline)
+                saveRouteBtn.classList.remove('active');
             } else {
-                saveRouteBtn.classList.add('active'); // Turn on (Filled)
+                saveRouteBtn.classList.add('active');
             }
-
             updateSavedRoute();
         });
 
 
         // --- CALCULATE ---
         async function calculateFare() {
-        const pickupVal = pickupSelect.value;
-        const destVal = destSelect.value;
-        const resultDisplay = document.getElementById('fareResult');
-        
-        // USE THE GLOBAL CONSTANT INSTEAD OF A TOGGLE
-        const isStudent = IS_DISCOUNTED; 
+            const pickupVal = pickupSelect.value;
+            const destVal = destSelect.value;
+            const resultDisplay = document.getElementById('fareResult');
+            
+            // FIX: Use constant instead of looking for checkbox
+            const isStudent = IS_DISCOUNTED; 
 
-        if (pickupVal === "" || destVal === "") {
-            saveRouteBtn.disabled = true;
-            saveRouteBtn.classList.remove('active');
-            return;
-        }
+            if (pickupVal === "" || destVal === "") {
+                saveRouteBtn.disabled = true;
+                saveRouteBtn.classList.remove('active');
+                return;
+            }
 
             saveRouteBtn.disabled = false;
 
@@ -430,8 +458,8 @@
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
                     const actualDistanceKm = route.distance / 1000;
-
-                    const avgSpeed = 20;
+                    
+                    const avgSpeed = 20; 
                     const timeInMinutes = Math.round((actualDistanceKm / avgSpeed) * 60);
                     let timeString = `${timeInMinutes} min`;
                     if (timeInMinutes >= 60) {
@@ -440,13 +468,13 @@
                         timeString = `${hrs} hr ${mins} min`;
                     }
 
+                    // Discount Logic
                     const startName = stops[pIndex].name;
                     const endName = stops[dIndex].name;
-
                     let billableDistance = actualDistanceKm;
 
                     if (startName === "IT Park" && endName != "Mactan Newtown" || startName != "Mactan Newtown" && endName === "IT Park") {
-                        billableDistance = Math.max(0, actualDistanceKm - 0.8);
+                        billableDistance = Math.max(0, actualDistanceKm - 0.8); 
                     }
 
                     let fare = 0;
@@ -455,13 +483,13 @@
                     if (isStudent) {
                         fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
                         if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
-                            fare = 41;
+                            fare = 41; 
                         }
                     } else {
                         const regularExcessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                         fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
                         if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
-                            fare = 51;
+                            fare = 51; 
                         }
                     }
 
@@ -470,16 +498,16 @@
                     const finalFare = Math.round(fare);
                     sheetTitle.innerText = `₱ ${finalFare}`;
 
-                    let detailsText = `Distance: ${actualDistanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}`;
+                    let detailsText = `Distance: ${actualDistanceKm.toFixed(2)} km | ${isStudent ? 'Discounted' : 'Regular'}`;
 
                     resultDisplay.innerHTML = `
                         ₱ ${finalFare} <span style="font-size: 1rem; font-weight:normal; opacity: 0.8;"> • ~${timeString}</span>
                         <span class="fare-details">${detailsText}</span>
                     `;
-
+                    
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
-
+                    
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
 
                     if (saveRouteBtn.classList.contains('active')) {
@@ -491,7 +519,8 @@
         }
 
         // --- INPUT HANDLERS ---
-        studentToggle.addEventListener('change', calculateFare);
+        // REMOVED LISTENER FOR TOGGLE
+        
         document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
         document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
 
@@ -536,14 +565,14 @@
             const msg = document.getElementById(type + 'Msg');
             const index = selectBox.value;
             const stop = stops[index];
-
-            if (input.value === "") input.value = stop.name;
+            
+            if(input.value === "") input.value = stop.name; 
             msg.innerText = "Selected: " + stop.name;
-
+            
             if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
             map.setView([stop.lat, stop.lng], 14);
-
-            if (doCalc) calculateFare();
+            
+            if(doCalc) calculateFare();
         }
 
         async function saveTripToHistory(pickupId, dropoffId, amount) {
@@ -558,44 +587,44 @@
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
-            bottomSheet.style.transform = "";
+            bottomSheet.style.transform = ""; 
         }
         function closeSheet() {
             bottomSheet.classList.remove('expanded');
             sheetOverlay.classList.remove('active');
-            bottomSheet.style.transform = "";
+            bottomSheet.style.transform = ""; 
         }
 
         sheetHeader.addEventListener('touchstart', (e) => {
             isDragging = true;
             startY = e.touches[0].clientY;
-            bottomSheet.classList.add('dragging');
+            bottomSheet.classList.add('dragging'); 
         }, { passive: true });
 
         sheetHeader.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            e.preventDefault();
+            e.preventDefault(); 
             const touchY = e.touches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
             if (isExpanded && deltaY > 0) {
-                bottomSheet.style.transform = `translateY(${deltaY}px)`;
-            }
+                 bottomSheet.style.transform = `translateY(${deltaY}px)`;
+            } 
         }, { passive: false });
 
         sheetHeader.addEventListener('touchend', (e) => {
             isDragging = false;
-            bottomSheet.classList.remove('dragging');
+            bottomSheet.classList.remove('dragging'); 
             const touchY = e.changedTouches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
-            const threshold = 100;
+            const threshold = 100; 
             if (isExpanded) {
                 if (deltaY > threshold) closeSheet();
-                else openSheet();
+                else openSheet(); 
             } else {
                 if (deltaY < -threshold) openSheet();
-                else closeSheet();
+                else closeSheet(); 
             }
         });
 
@@ -607,5 +636,4 @@
         sheetOverlay.addEventListener('click', closeSheet);
     </script>
 </body>
-
 </html>
