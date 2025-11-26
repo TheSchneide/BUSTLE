@@ -217,19 +217,16 @@
                     <i class="fa-solid fa-envelope"></i>
                 </div>
                 <div class="inputBox">
-                    <input type="password" name="password" placeholder="Password" required
-                        pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}"
-                        title="Password must be at least 8 characters, include uppercase, lowercase, and number.">
+                    <input type="text" name="birthdate" placeholder="Birthdate" onfocus="(this.type='date')" onblur="(this.type='text')" required>
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+            
+                <div class="inputBox">
+                    <input type="password" name="password" placeholder="Password" required...>
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 <button type="submit" class="submitBtn">Register</button>
-                <p>or Register with social platforms</p>
-                <div class="socials">
-                    <a href=""><i class="fa-brands fa-google"></i></a>
-                    <a href=""><i class="fa-brands fa-facebook"></i></a>
-                    <a href=""><i class="fa-brands fa-github"></i></a>
-                </div>
-            </form>
+                </form>
         </div>
 
         <!-- LOGIN PANEL BELOW FORM -->
