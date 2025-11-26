@@ -1,7 +1,7 @@
 <?php
 session_start();
 include 'Database.php';
-include 'SavedRoute.php'; // Include your new class
+include 'SavedRoute.php'; 
 
 header('Content-Type: application/json');
 
@@ -16,15 +16,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $user_id = $_SESSION['user_id'];
     $action = $_POST['action']; 
+    $pickup = $_POST['pickup_id'];
+    $dropoff = $_POST['dropoff_id'];
 
     $success = false;
 
     if ($action === 'save') {
-        $pickup = $_POST['pickup_id'];
-        $dropoff = $_POST['dropoff_id'];
         $success = $routeManager->save($user_id, $pickup, $dropoff);
     } else {
-        $success = $routeManager->remove($user_id);
+        // Now passing specific IDs to remove only that route
+        $success = $routeManager->remove($user_id, $pickup, $dropoff);
     }
 
     if ($success) {

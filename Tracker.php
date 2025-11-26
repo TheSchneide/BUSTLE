@@ -1,15 +1,23 @@
 <?php
 session_start();
+include 'Database.php';
+include 'SavedRoute.php';
+include 'Trip.php'; // Ensure Trip class is included for history
 
-// redirect if not logged in
+// Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
 }
 
-// Check discount status set during login
+// 1. Check Passenger Type (Calculated during Login)
 $isDiscounted = isset($_SESSION['is_discounted']) && $_SESSION['is_discounted'] === true;
 $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : "Regular";
+
+// 2. Fetch ALL Saved Routes for this user (For the Star button logic)
+$db = new Database();
+$savedObj = new SavedRoute($db->getConnection());
+$mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,23 +29,59 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
     <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="icon" type="image/x-icon" href="busFavicon.png">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="">
         </script>
     
     <style>
+        /* --- CUSTOM STYLES FOR TRACKER PHP --- */
+        
+        /* 1. Header Row (Aligns "Pick-up" with Star) */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .header-row .input-label { margin-bottom: 0; }
+
+        /* 2. Star Save Button (Outline vs Filled) */
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: transform 0.2s;
+            color: transparent; /* Transparent center */
+            -webkit-text-stroke: 2px #FF9A00; /* Orange Outline */
+        }
+        .star-btn.active {
+            color: #FF9A00; /* Solid Orange */
+            -webkit-text-stroke: 0;
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
+        }
+        .star-btn:disabled {
+            -webkit-text-stroke: 2px #ccc; 
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* 3. Swap Button */
         .swap-container {
-            width: 50%;
+            width: 100%;
             display: flex;
             justify-content: flex-end;
             margin-top: -15px;
             margin-bottom: -15px;
-            margin-left: 25px;
             position: relative;
             z-index: 10;
             padding-right: 10px;
+            box-sizing: border-box;
         }
-
         .swap-btn {
             background: white;
             border: 2px solid #eee;
@@ -48,35 +92,20 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             transition: transform 0.2s, background 0.2s;
         }
-
         .swap-btn:hover {
             background: #f0f0f0;
             transform: rotate(180deg);
         }
-
         .swap-icon {
             font-size: 18px;
             color: #FF9A00;
             font-weight: bold;
         }
 
-
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            /* Matches the original spacing */
-        }
-
-        /* Remove bottom margin from label since the row handles it */
-        .header-row .input-label {
-            margin-bottom: 0;
-        }
-
+        /* 4. Info Badge (Replaces Toggle) */
         .info-badge-container {
             display: flex;
             align-items: center;
@@ -86,7 +115,6 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             background-color: #f9f9f9;
             border-radius: 10px;
             border: 1px solid #eee;
-            opacity: 0.9;
         }
         .info-badge {
             padding: 5px 15px;
@@ -95,53 +123,34 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             font-size: 0.8rem;
             text-transform: uppercase;
         }
-        .badge-active {
-            background: #FF9A00;
-            color: white;
-        }
-        .badge-regular {
-            background: #ccc;
-            color: #666;
-        }
+        .badge-active { background: #FF9A00; color: white; }
+        .badge-regular { background: #ccc; color: #666; }
 
-        /* --- Star Save Button --- */
-        .star-btn {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-            transition: transform 0.2s, color 0.2s;
-
-            /* DEFAULT STATE: Empty / Outline */
-            color: transparent;
-            /* See-through inside */
-            -webkit-text-stroke: 2px #FF9A00;
-            /* Orange Outline */
+        /* 5. Ticket Style Fare Result */
+        .fare-display {
+            background-color: #FF9A00; 
+            color: #4F200D;
+            padding: 20px 25px;
+            border-radius: 16px;
+            margin-top: 25px;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
+            font-family: 'Outfit', sans-serif;
+            text-align: left;
         }
-
-        .star-btn.active {
-            /* ACTIVE STATE: Filled */
-            color: #FF9A00;
-            /* Solid Orange */
-            -webkit-text-stroke: 0;
-            /* Remove outline */
-            transform: scale(1.2);
-            /* Slight pop effect */
-            filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
-        }
-
-        .star-btn:disabled {
-            /* DISABLED STATE: Grey Outline */
-            -webkit-text-stroke: 2px #ccc;
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        .star-btn:active {
-            transform: scale(0.9);
-        }
+        .fd-header { text-align: center; margin-bottom: 15px; position: relative; }
+        .fd-handle { width: 30px; height: 3px; background: #4F200D; opacity: 0.8; border-radius: 2px; margin: 0 auto 8px auto; }
+        .fd-title { font-weight: 800; font-size: 14px; letter-spacing: 1px; margin: 0; text-transform: uppercase; }
+        .fd-heart { position: absolute; top: 0; left: 0; font-size: 20px; opacity: 0.5; }
+        .fd-body { display: flex; justify-content: space-between; align-items: flex-end; }
+        .fd-route { flex: 1; padding-right: 10px; display: flex; flex-direction: column; gap: 2px; }
+        .fd-label { font-weight: 800; font-size: 14px; color: #4F200D; display: inline-block; width: 50px; }
+        .fd-address { font-size: 14px; font-weight: 400; opacity: 0.9; }
+        .fd-arrow { font-size: 14px; color: #4F200D; margin-left: 18px; margin-top: -2px; margin-bottom: -2px; }
+        .fd-info { text-align: right; min-width: 100px; margin-bottom: 10px;}
+        .fd-info-label { font-size: 12px; opacity: 0.7; margin-bottom: 4px; display: block; }
+        .fd-price { font-size: 32px; font-weight: 800; line-height: 1; display: block; }
+        .fd-time { font-size: 13px; font-weight: 600; margin-top: 6px; display: block; opacity: 0.8; }
     </style>
 </head>
 
@@ -234,10 +243,13 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
         const REGULAR_BASE_FARE = 13.00;
         const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
 
-        // --- PHP TO JS INJECTION ---
-        // This replaces the need for the toggle check
+        // --- PHP INJECTION ---
         const IS_DISCOUNTED = <?php echo $isDiscounted ? 'true' : 'false'; ?>;
+        
+        // Load all saved routes into JS Array: [{pickup_stop_id: 1, dropoff_stop_id: 5}, ...]
+        const USER_SAVED_ROUTES = <?php echo json_encode($mySavedRoutes); ?>;
 
+        // --- MAP SETUP ---
         const map = L.map('map').setView([10.32853, 123.9089], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
@@ -246,12 +258,8 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
         const destSelect = document.getElementById('destSelect');
         const pickupInput = document.getElementById('pickupInput');
         const destInput = document.getElementById('destInput');
-        
-        // REMOVED: const studentToggle ... (This caused the error)
-        
-        const saveRouteBtn = document.getElementById('saveRouteBtn'); // Star button
+        const saveRouteBtn = document.getElementById('saveRouteBtn');
         const swapBtn = document.getElementById('swapBtn');
-        
         const sheetTitle = document.getElementById('sheetTitle');
         const bottomSheet = document.getElementById('bottomSheet');
         const sheetHeader = document.getElementById('sheetHeader');
@@ -261,12 +269,12 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
 
-        // --- DRAG VARIABLES ---
+        // --- DRAG VARS ---
         let startY = 0;
         let isDragging = false;
         const getHiddenY = () => window.innerHeight - 90;
 
-        // --- FETCH STOPS ---
+        // --- 1. FETCH STOPS ---
         async function fetchBusStops() {
             try {
                 const response = await fetch('get_stops.php');
@@ -302,7 +310,7 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             });
         }
 
-        // --- SWAP LOGIC ---
+        // --- 2. SWAP LOGIC ---
         swapBtn.addEventListener('click', () => {
             const tempSelect = pickupSelect.value;
             pickupSelect.value = destSelect.value;
@@ -323,7 +331,7 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
 
         fetchBusStops();
 
-        // --- CHECK URL PARAMS ---
+        // --- 3. URL PARAMS CHECK ---
         function checkUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             const savedPickupId = urlParams.get('savedPickup');
@@ -337,11 +345,6 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
                     openSheet();
                     pickupSelect.value = pIndex;
                     destSelect.value = dIndex;
-                    
-                    // Set Star Active
-                    saveRouteBtn.classList.add('active');
-                    saveRouteBtn.disabled = false;
-                    
                     calculateFare();
                 }
             }
@@ -385,43 +388,50 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             }
         }
 
-        // --- SAVE ROUTE LOGIC ---
+        // --- 4. SAVE ROUTE (STAR BUTTON) ---
         async function updateSavedRoute() {
             const pIndex = pickupSelect.value;
             const dIndex = destSelect.value;
-            
             if (pIndex === "" || dIndex === "") return;
 
+            // Check visual state to determine action
             const action = saveRouteBtn.classList.contains('active') ? 'save' : 'remove';
+            const pickupId = stops[pIndex].id;
+            const dropoffId = stops[dIndex].id;
+
             const formData = new FormData();
-            formData.append('pickup_id', stops[pIndex].id);
-            formData.append('dropoff_id', stops[dIndex].id);
+            formData.append('pickup_id', pickupId);
+            formData.append('dropoff_id', dropoffId);
             formData.append('action', action);
 
             try {
                 await fetch('save_route.php', { method: 'POST', body: formData });
-                console.log("Saved route updated: " + action);
+                console.log("Saved route: " + action);
+                
+                // Update Local Array so logic persists without reload
+                if (action === 'save') {
+                    USER_SAVED_ROUTES.push({pickup_stop_id: pickupId, dropoff_stop_id: dropoffId});
+                } else {
+                    const idx = USER_SAVED_ROUTES.findIndex(r => r.pickup_stop_id == pickupId && r.dropoff_stop_id == dropoffId);
+                    if (idx > -1) USER_SAVED_ROUTES.splice(idx, 1);
+                }
             } catch(e) { console.error(e); }
         }
 
         saveRouteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (saveRouteBtn.classList.contains('active')) {
-                saveRouteBtn.classList.remove('active');
-            } else {
-                saveRouteBtn.classList.add('active');
-            }
+            // Toggle visual state immediately
+            saveRouteBtn.classList.toggle('active');
             updateSavedRoute();
         });
 
 
-        // --- CALCULATE ---
+        // --- 5. CALCULATE FARE ---
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
             const resultDisplay = document.getElementById('fareResult');
             
-            // FIX: Use constant instead of looking for checkbox
             const isStudent = IS_DISCOUNTED; 
 
             if (pickupVal === "" || destVal === "") {
@@ -432,6 +442,13 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
 
             saveRouteBtn.disabled = false;
 
+            // Check if this route is already saved (Update Star)
+            const currentPickupId = stops[pickupVal].id;
+            const currentDropoffId = stops[destVal].id;
+            const isSaved = USER_SAVED_ROUTES.some(r => r.pickup_stop_id == currentPickupId && r.dropoff_stop_id == currentDropoffId);
+            if (isSaved) saveRouteBtn.classList.add('active');
+            else saveRouteBtn.classList.remove('active');
+
             const pIndex = parseInt(pickupVal);
             const dIndex = parseInt(destVal);
 
@@ -441,7 +458,7 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
                 if (currentRouteLayer) map.removeLayer(currentRouteLayer); return;
             }
 
-            resultDisplay.innerHTML = `Calculating... <span class="fare-details">Tracing route...</span>`;
+            resultDisplay.innerHTML = `Calculating...`;
             sheetTitle.innerText = "BUS";
             if (currentRouteLayer) map.removeLayer(currentRouteLayer);
 
@@ -459,6 +476,7 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
                     const route = data.routes[0];
                     const actualDistanceKm = route.distance / 1000;
                     
+                    // Time Calc
                     const avgSpeed = 20; 
                     const timeInMinutes = Math.round((actualDistanceKm / avgSpeed) * 60);
                     let timeString = `${timeInMinutes} min`;
@@ -471,10 +489,12 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
                     // Discount Logic
                     const startName = stops[pIndex].name;
                     const endName = stops[dIndex].name;
+                    
                     let billableDistance = actualDistanceKm;
 
-                    if (startName === "IT Park" && endName != "Mactan Newtown" || startName != "Mactan Newtown" && endName === "IT Park") {
-                        billableDistance = Math.max(0, actualDistanceKm - 0.8); 
+                    // 0.6km reduction for IT Park (Corrected from 0.8)
+                    if (startName === "IT Park" || endName === "IT Park") {
+                        billableDistance = Math.max(0, actualDistanceKm - 0.6); 
                     }
 
                     let fare = 0;
@@ -482,27 +502,40 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
 
                     if (isStudent) {
                         fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
-                        if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
+                        if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
                             fare = 41; 
                         }
                     } else {
                         const regularExcessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                         fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
-                        if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
+                        if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
                             fare = 51; 
                         }
                     }
 
+                    // Minimum Fare Floor
                     if (fare < 13.00) { fare = 13.00; }
 
                     const finalFare = Math.round(fare);
                     sheetTitle.innerText = `₱ ${finalFare}`;
 
-                    let detailsText = `Distance: ${actualDistanceKm.toFixed(2)} km | ${isStudent ? 'Discounted' : 'Regular'}`;
+                    // Ticket Style Output
+                    const safeStart = startName.length > 15 ? startName.substring(0, 15) + '...' : startName;
+                    const safeEnd = endName.length > 15 ? endName.substring(0, 15) + '...' : endName;
 
                     resultDisplay.innerHTML = `
-                        ₱ ${finalFare} <span style="font-size: 1rem; font-weight:normal; opacity: 0.8;"> • ~${timeString}</span>
-                        <span class="fare-details">${detailsText}</span>
+                        <div class="fd-body">
+                            <div class="fd-route">
+                                <div><span class="fd-label">Start</span><span class="fd-address">${safeStart}</span></div>
+                                <div class="fd-arrow">↓</div>
+                                <div><span class="fd-label">Finish</span><span class="fd-address">${safeEnd}</span></div>
+                            </div>
+                            <div class="fd-info">
+                                <span class="fd-info-label">Total Fare</span>
+                                <span class="fd-price">₱ ${finalFare}</span>
+                                <span class="fd-time">Estimated Time~${timeString}</span>
+                            </div>
+                        </div>
                     `;
                     
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
@@ -510,17 +543,11 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
                     
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
 
-                    if (saveRouteBtn.classList.contains('active')) {
-                        updateSavedRoute();
-                    }
-
                 } else { resultDisplay.innerHTML = `Error <span class="fare-details">No route found</span>`; }
             } catch (error) { console.error(error); resultDisplay.innerHTML = `Error <span class="fare-details">Connection failed</span>`; }
         }
 
         // --- INPUT HANDLERS ---
-        // REMOVED LISTENER FOR TOGGLE
-        
         document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
         document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
 
@@ -565,13 +592,10 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             const msg = document.getElementById(type + 'Msg');
             const index = selectBox.value;
             const stop = stops[index];
-            
             if(input.value === "") input.value = stop.name; 
             msg.innerText = "Selected: " + stop.name;
-            
             if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
             map.setView([stop.lat, stop.lng], 14);
-            
             if(doCalc) calculateFare();
         }
 
@@ -583,7 +607,7 @@ $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] 
             try { await fetch('save_trip.php', { method: 'POST', body: formData }); } catch (e) { }
         }
 
-        // --- DRAGGABLE SHEET LOGIC ---
+        // --- DRAG LOGIC ---
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');

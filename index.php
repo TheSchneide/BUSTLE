@@ -20,7 +20,7 @@ if ($isLoggedIn) {
 
     // 3. Use SavedRoute Class
     $savedRouteObj = new SavedRoute($conn);
-    $saved_route = $savedRouteObj->get($_SESSION['user_id']);
+    $all_saved_routes = $savedRouteObj->getAll($_SESSION['user_id']);
 }
 ?>
 <!DOCTYPE html>
@@ -207,7 +207,7 @@ if ($isLoggedIn) {
         <a href="#index.php" class="Home">Home</a>
 
         <?php if($isLoggedIn): ?>
-          <a href="Tracker.html" class="tracker">Tracker</a>
+          <a href="Tracker.php" class="tracker">Tracker</a>
           <a href="logout.php">Logout</a>
         <?php else: ?>
           <a href="login.html" class="tracker">Tracker</a>
@@ -236,7 +236,7 @@ if ($isLoggedIn) {
               </p>
           </div>
 
-          <div class="currentBus" onclick="window.location.href='Tracker.html?autoLocate=true'">    
+          <div class="currentBus" onclick="window.location.href='Tracker.php?autoLocate=true'">    
             <h2>Your Current Location</h2>
             <p id="userAddress">Locating...</p>
             <p id="userCoords" style="font-size: 0.8rem; color: #888;">Waiting for permission...</p>
@@ -244,10 +244,15 @@ if ($isLoggedIn) {
                 Tap to use as Pick-up →
             </p>
           </div>
-          <?php if($saved_route): ?>
-            <div class="savedRouteBtn" onclick="window.location.href='Tracker.html?savedPickup=<?= $saved_route['pickup_stop_id'] ?>&savedDropoff=<?= $saved_route['dropoff_stop_id'] ?>'">
-                <h3>★ Saved Route</h3>
-                <p><?= htmlspecialchars($saved_route['pickup_name']) ?> ➝ <?= htmlspecialchars($saved_route['dropoff_name']) ?></p>
+          <?php if(!empty($all_saved_routes)): ?>
+            <div style="width: 90%; max-width: 600px; margin: 0 auto;">
+                <h3 style="color: #4F200D; margin-bottom: 10px; text-align: center;">Saved Routes</h3>
+                
+                <?php foreach($all_saved_routes as $route): ?>
+                    <div class="savedRouteBtn" onclick="window.location.href='Tracker.php?savedPickup=<?= $route['pickup_stop_id'] ?>&savedDropoff=<?= $route['dropoff_stop_id'] ?>'">
+                        <p style="margin:0;">★ <?= htmlspecialchars($route['pickup_name']) ?> ➝ <?= htmlspecialchars($route['dropoff_name']) ?></p>
+                    </div>
+                <?php endforeach; ?>
             </div>
           <?php endif; ?>
         </div>
