@@ -11,6 +11,98 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="">
         </script>
+
+    <style>
+        .swap-container {
+            width: 50%;
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -15px;
+            margin-bottom: -15px;
+            margin-left: 25px;
+            position: relative;
+            z-index: 10;
+            padding-right: 10px;
+        }
+
+        .swap-btn {
+            background: white;
+            border: 2px solid #eee;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .swap-btn:hover {
+            background: #f0f0f0;
+            transform: rotate(180deg);
+        }
+
+        .swap-icon {
+            font-size: 18px;
+            color: #FF9A00;
+            font-weight: bold;
+        }
+
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            /* Matches the original spacing */
+        }
+
+        /* Remove bottom margin from label since the row handles it */
+        .header-row .input-label {
+            margin-bottom: 0;
+        }
+
+        /* --- Star Save Button --- */
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: transform 0.2s, color 0.2s;
+
+            /* DEFAULT STATE: Empty / Outline */
+            color: transparent;
+            /* See-through inside */
+            -webkit-text-stroke: 2px #FF9A00;
+            /* Orange Outline */
+        }
+
+        .star-btn.active {
+            /* ACTIVE STATE: Filled */
+            color: #FF9A00;
+            /* Solid Orange */
+            -webkit-text-stroke: 0;
+            /* Remove outline */
+            transform: scale(1.2);
+            /* Slight pop effect */
+            filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
+        }
+
+        .star-btn:disabled {
+            /* DISABLED STATE: Grey Outline */
+            -webkit-text-stroke: 2px #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .star-btn:active {
+            transform: scale(0.9);
+        }
+    </style>
 </head>
 
 <body>
@@ -38,7 +130,11 @@
         <div class="sheet-content">
 
             <div class="input-group">
-                <label class="input-label">Pick-up Point</label>
+                <div class="header-row">
+                    <label class="input-label">Pick-up Point</label>
+                    <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
+                </div>
+
                 <input type="text" id="pickupInput" class="clean-input" placeholder="Search location..."
                     autocomplete="off">
                 <div id="pickupSuggestions" class="suggestions-list"></div>
@@ -47,6 +143,12 @@
                     <option value="" disabled selected>-- Loading Stops... --</option>
                 </select>
                 <div id="pickupMsg" class="helper-text"></div>
+            </div>
+
+            <div class="swap-container">
+                <button class="swap-btn" id="swapBtn" title="Swap Locations">
+                    <span class="swap-icon">⇅</span>
+                </button>
             </div>
 
             <div class="input-group">
@@ -72,17 +174,6 @@
                 </label>
             </div>
 
-            <div class="toggle-container">
-                <div class="toggle-label">
-                    Save this Route to Home
-                    <span class="toggle-sublabel">Quick access for next time</span>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="saveRouteToggle" disabled>
-                    <span class="slider"></span>
-                </label>
-            </div>
-
             <div id="fareResult" class="fare-display">
                 ₱ 0
                 <span class="fare-details">Select locations to calculate</span>
@@ -95,6 +186,7 @@
         <a href="">BustleCrew@gmail.com</a>
         <a href="">+091234567</a>
     </footer>
+
     <script>
         // --- CONFIGURATION ---
         const STUDENT_BASE_FARE = 13.00;
@@ -109,8 +201,13 @@
         let stops = [];
         const pickupSelect = document.getElementById('pickupSelect');
         const destSelect = document.getElementById('destSelect');
+        const pickupInput = document.getElementById('pickupInput');
+        const destInput = document.getElementById('destInput');
         const studentToggle = document.getElementById('studentToggle');
-        const saveRouteToggle = document.getElementById('saveRouteToggle');
+
+        const saveRouteBtn = document.getElementById('saveRouteBtn');
+        const swapBtn = document.getElementById('swapBtn');
+
         const sheetTitle = document.getElementById('sheetTitle');
         const bottomSheet = document.getElementById('bottomSheet');
         const sheetHeader = document.getElementById('sheetHeader');
@@ -161,6 +258,25 @@
             });
         }
 
+        // --- SWAP LOGIC ---
+        swapBtn.addEventListener('click', () => {
+            const tempSelect = pickupSelect.value;
+            pickupSelect.value = destSelect.value;
+            destSelect.value = tempSelect;
+
+            const tempText = pickupInput.value;
+            pickupInput.value = destInput.value;
+            destInput.value = tempText;
+
+            if (searchMarkers['pickup']) map.removeLayer(searchMarkers['pickup']);
+            if (searchMarkers['dest']) map.removeLayer(searchMarkers['dest']);
+
+            if (pickupSelect.value !== "") manualSelect('pickup', false);
+            if (destSelect.value !== "") manualSelect('dest', false);
+
+            calculateFare();
+        });
+
         fetchBusStops();
 
         // --- CHECK URL PARAMS ---
@@ -177,9 +293,11 @@
                     openSheet();
                     pickupSelect.value = pIndex;
                     destSelect.value = dIndex;
-                    // Visually check the save box since it IS a saved route
-                    saveRouteToggle.checked = true;
-                    saveRouteToggle.disabled = false;
+
+                    // Light up star (Filled)
+                    saveRouteBtn.classList.add('active');
+                    saveRouteBtn.disabled = false;
+
                     calculateFare();
                 }
             }
@@ -223,15 +341,15 @@
             }
         }
 
-        // --- SAVE ROUTE LOGIC (UPDATED) ---
-        // We separated this function so it can be called by the Toggle AND the Calculator
+        // --- SAVE ROUTE LOGIC (STAR BUTTON) ---
         async function updateSavedRoute() {
             const pIndex = pickupSelect.value;
             const dIndex = destSelect.value;
-            
+
             if (pIndex === "" || dIndex === "") return;
 
-            const action = saveRouteToggle.checked ? 'save' : 'remove';
+            const action = saveRouteBtn.classList.contains('active') ? 'save' : 'remove';
+
             const formData = new FormData();
             formData.append('pickup_id', stops[pIndex].id);
             formData.append('dropoff_id', stops[dIndex].id);
@@ -240,11 +358,20 @@
             try {
                 await fetch('save_route.php', { method: 'POST', body: formData });
                 console.log("Saved route updated: " + action);
-            } catch(e) { console.error(e); }
+            } catch (e) { console.error(e); }
         }
 
-        // Trigger logic when toggle is clicked manually
-        saveRouteToggle.addEventListener('change', updateSavedRoute);
+        saveRouteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+
+            if (saveRouteBtn.classList.contains('active')) {
+                saveRouteBtn.classList.remove('active'); // Turn off (Outline)
+            } else {
+                saveRouteBtn.classList.add('active'); // Turn on (Filled)
+            }
+
+            updateSavedRoute();
+        });
 
 
         // --- CALCULATE ---
@@ -255,12 +382,12 @@
             const isStudent = studentToggle.checked;
 
             if (pickupVal === "" || destVal === "") {
-                saveRouteToggle.disabled = true;
-                saveRouteToggle.checked = false;
+                saveRouteBtn.disabled = true;
+                saveRouteBtn.classList.remove('active');
                 return;
             }
 
-            saveRouteToggle.disabled = false;
+            saveRouteBtn.disabled = false;
 
             const pIndex = parseInt(pickupVal);
             const dIndex = parseInt(destVal);
@@ -287,42 +414,60 @@
                 const data = await response.json();
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
-                    const distanceKm = route.distance / 1000;
-                    
-                    let fare = 0;
-                    const excessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
+                    const actualDistanceKm = route.distance / 1000;
 
-                    if (isStudent) {
-                        fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
-                    } else {
-                        const regularExcessDist = Math.max(0, distanceKm - STUDENT_BASE_DIST);
-                        fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
+                    const avgSpeed = 20;
+                    const timeInMinutes = Math.round((actualDistanceKm / avgSpeed) * 60);
+                    let timeString = `${timeInMinutes} min`;
+                    if (timeInMinutes >= 60) {
+                        const hrs = Math.floor(timeInMinutes / 60);
+                        const mins = timeInMinutes % 60;
+                        timeString = `${hrs} hr ${mins} min`;
                     }
 
                     const startName = stops[pIndex].name;
                     const endName = stops[dIndex].name;
-                    if (startName === "IT Park" || endName === "IT Park") {
-                        fare = fare - 2; 
+
+                    let billableDistance = actualDistanceKm;
+
+                    if (startName === "IT Park" && endName != "Mactan Newtown" || startName != "Mactan Newtown" && endName === "IT Park") {
+                        billableDistance = Math.max(0, actualDistanceKm - 0.8);
                     }
-                    if (fare < 13.00) fare = 13.00;
+
+                    let fare = 0;
+                    const excessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
+
+                    if (isStudent) {
+                        fare = STUDENT_BASE_FARE + (excessDist * STUDENT_EXCESS_RATE);
+                        if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
+                            fare = 41;
+                        }
+                    } else {
+                        const regularExcessDist = Math.max(0, billableDistance - STUDENT_BASE_DIST);
+                        fare = REGULAR_BASE_FARE + (regularExcessDist * REGULAR_EXCESS_RATE);
+                        if (startName === "IT Park" && endName === "Mactan Newtown" || startName === "Mactan Newtown" && endName === "IT Park") {
+                            fare = 51;
+                        }
+                    }
+
+                    if (fare < 13.00) { fare = 13.00; }
 
                     const finalFare = Math.round(fare);
                     sheetTitle.innerText = `₱ ${finalFare}`;
 
-                    let detailsText = `Distance: ${distanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}`;
-                    if (startName === "IT Park" || endName === "IT Park") {
-                        detailsText += " (IT Park Discount)";
-                    }
+                    let detailsText = `Distance: ${actualDistanceKm.toFixed(2)} km | ${isStudent ? 'Student' : 'Regular'}`;
 
-                    resultDisplay.innerHTML = `₱ ${finalFare}<span class="fare-details">${detailsText}</span>`;
+                    resultDisplay.innerHTML = `
+                        ₱ ${finalFare} <span style="font-size: 1rem; font-weight:normal; opacity: 0.8;"> • ~${timeString}</span>
+                        <span class="fare-details">${detailsText}</span>
+                    `;
+
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
-                    
-                    // 1. Update Recent History (Database will UPDATE instead of INSERT now)
+
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
 
-                    // 2. NEW: If Save Toggle is ON, update the Saved Route in DB automatically
-                    if (saveRouteToggle.checked) {
+                    if (saveRouteBtn.classList.contains('active')) {
                         updateSavedRoute();
                     }
 
@@ -370,17 +515,20 @@
         pickupSelect.addEventListener('change', () => manualSelect('pickup'));
         destSelect.addEventListener('change', () => manualSelect('dest'));
 
-        function manualSelect(type) {
+        function manualSelect(type, doCalc = true) {
             const selectBox = document.getElementById(type + 'Select');
             const input = document.getElementById(type + 'Input');
             const msg = document.getElementById(type + 'Msg');
             const index = selectBox.value;
             const stop = stops[index];
-            input.value = "";
-            msg.innerText = "Manual selection: " + stop.name;
+
+            if (input.value === "") input.value = stop.name;
+            msg.innerText = "Selected: " + stop.name;
+
             if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
             map.setView([stop.lat, stop.lng], 14);
-            calculateFare();
+
+            if (doCalc) calculateFare();
         }
 
         async function saveTripToHistory(pickupId, dropoffId, amount) {
@@ -395,44 +543,44 @@
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
-            bottomSheet.style.transform = ""; 
+            bottomSheet.style.transform = "";
         }
         function closeSheet() {
             bottomSheet.classList.remove('expanded');
             sheetOverlay.classList.remove('active');
-            bottomSheet.style.transform = ""; 
+            bottomSheet.style.transform = "";
         }
 
         sheetHeader.addEventListener('touchstart', (e) => {
             isDragging = true;
             startY = e.touches[0].clientY;
-            bottomSheet.classList.add('dragging'); 
+            bottomSheet.classList.add('dragging');
         }, { passive: true });
 
         sheetHeader.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
-            e.preventDefault(); 
+            e.preventDefault();
             const touchY = e.touches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
             if (isExpanded && deltaY > 0) {
-                 bottomSheet.style.transform = `translateY(${deltaY}px)`;
-            } 
+                bottomSheet.style.transform = `translateY(${deltaY}px)`;
+            }
         }, { passive: false });
 
         sheetHeader.addEventListener('touchend', (e) => {
             isDragging = false;
-            bottomSheet.classList.remove('dragging'); 
+            bottomSheet.classList.remove('dragging');
             const touchY = e.changedTouches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
-            const threshold = 100; 
+            const threshold = 100;
             if (isExpanded) {
                 if (deltaY > threshold) closeSheet();
-                else openSheet(); 
+                else openSheet();
             } else {
                 if (deltaY < -threshold) openSheet();
-                else closeSheet(); 
+                else closeSheet();
             }
         });
 
