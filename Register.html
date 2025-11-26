@@ -223,9 +223,16 @@
                 </div>
             
                 <div class="inputBox">
-                    <input type="password" name="password" placeholder="Password" required...>
+                    <input type="password" name="password" placeholder="Password" required>
                     <i class="fa-solid fa-lock"></i>
                 </div>
+                
+                <!-- ADDED CONFIRM PASSWORD FIELD -->
+                <div class="inputBox">
+                    <input type="password" name="confirm_password" placeholder="Confirm Password" required>
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+
                 <button type="submit" class="submitBtn">Register</button>
                 </form>
         </div>
@@ -249,16 +256,73 @@ document.body.appendChild(popup);
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    // Helper Function for showing errors
+    function showError(message) {
+        popup.textContent = message;
+        popup.className = '';
+        popup.classList.add('error', 'show'); // Default is red
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 3000);
+    }
+
+    // --- 1. BIRTHDATE CHECK ---
+    const birthdateInput = form.querySelector('input[name="birthdate"]').value;
+    if (birthdateInput) {
+        const birthDate = new Date(birthdateInput);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time for cleaner comparison
+
+        // Check 1: Future Date
+        if (birthDate > today) {
+            showError("Birthdate cannot be in the future!");
+            return;
+        }
+
+        // Check 2: Unreasonably Old (Before 1900)
+        const minDate = new Date('1900-01-01');
+        if (birthDate < minDate) {
+            showError("Please enter a valid birth year (after 1900).");
+            return;
+        }
+
+        // Check 3: Minimum Age (e.g., 5 years old)
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+
+        if (age < 5) {
+            showError("You must be at least 5 years old to register.");
+            return;
+        }
+    }
+
+    // --- 2. PASSWORD CHECK ---
+    const password = form.querySelector('input[name="password"]').value;
+    const confirmPassword = form.querySelector('input[name="confirm_password"]').value;
+
+    if (password !== confirmPassword) {
+        showError("Passwords do not match!");
+        return; 
+    }
+
+    // --- 3. SUBMIT ---
     const formData = new FormData(form);
     const response = await fetch('register.php', { method: 'POST', body: formData });
     const data = await response.json();
+    
     popup.textContent = data.message;
     popup.className = '';
     popup.classList.add(data.status, 'show');
+    
     setTimeout(() => {
         popup.classList.remove('show');
         if (data.status === 'success') window.location.href = 'index.php';
     }, 1500);
+    
     if (data.status === 'success') form.reset();
 });
 </script>

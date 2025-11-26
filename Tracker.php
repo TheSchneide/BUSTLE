@@ -184,6 +184,62 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         .rush-close:hover {
             background: rgba(255,255,255,0.4);
         }
+
+        /* --- 6. COPY/SHARE BUTTON STYLES --- */
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #4F200D;
+            color: #4F200D;
+            border-radius: 4px;
+            font-size: 10px;
+            padding: 2px 6px;
+            cursor: pointer;
+            margin-left: 8px;
+            text-transform: uppercase;
+            font-weight: bold;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background: #4F200D;
+            color: #FF9A00;
+            opacity: 1;
+        }
+        .copy-btn.copied {
+            background: #4F200D;
+            color: white;
+            content: "Copied!";
+        }
+
+        /* --- 7. FIRST TIME MAP TIP --- */
+        .map-tip-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 3000; /* Very high */
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .map-tip-overlay.show { display: block; }
+        .map-tip-icon { font-size: 40px; margin-bottom: 15px; }
+        .map-tip-btn {
+            background: #FF9A00;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
     </style>
 </head>
 
@@ -196,6 +252,16 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             <span class="rush-msg">Expect heavy traffic. Seats may not be available immediately.</span>
         </div>
         <button class="rush-close" onclick="closeRushBanner()">✕</button>
+    </div>
+
+    <!-- MAP TIP MODAL -->
+    <div id="mapTip" class="map-tip-overlay">
+        <div class="map-tip-icon">👆</div>
+        <h3 style="margin:0 0 10px 0; color:#4F200D;">Tap a Bus Stop</h3>
+        <p style="margin:0; color:#666; font-size:0.95rem;">
+            Click on any 🟢 green circle on the map to select it as your location.
+        </p>
+        <button class="map-tip-btn" onclick="closeMapTip()">Got it!</button>
     </div>
 
     <header>
@@ -427,13 +493,22 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             });
         }
 
-        // --- NEW: PICK ON MAP LOGIC ---
+        // --- NEW: PICK ON MAP LOGIC WITH TIP ---
 
         function startPickingLocation(type) {
             pickingMode = type;
             closeSheet();
-            // Optional: Toast or small hint could go here
-            console.log("Pick mode started for: " + type);
+            
+            // Check if user has seen the tip before
+            const hasSeenTip = localStorage.getItem('hasSeenMapTip');
+            if (!hasSeenTip) {
+                document.getElementById('mapTip').classList.add('show');
+            }
+        }
+
+        function closeMapTip() {
+            document.getElementById('mapTip').classList.remove('show');
+            localStorage.setItem('hasSeenMapTip', 'true');
         }
 
         function showStopConfirmation(index) {
@@ -595,7 +670,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             updateSavedRoute();
         });
 
-        // --- 5. HELPER: COMPUTE FARE MATH (UPDATED) ---
+        // --- 5. HELPER: COMPUTE FARE MATH (New Helper) ---
         function computeFareValue(distKm, startName, endName) {
             const isStudent = IS_DISCOUNTED;
             let billableDistance = distKm;
@@ -610,26 +685,18 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
                 
-                // 1. FIXED RATE: IT Park -> Mactan Newtown ONLY (41)
-                if (startName === "IT Park" && endName === "Mactan Newtown") {
+                // Fixed routes
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || 
+                    (startName === "Mactan Newtown" && endName === "IT Park")) {
                     fare = 41; 
                 }
-
-                // 2. SPECIAL CAPS for Students
-                if (startName === "Mactan Newtown") {
-                    if (fare > 31) fare = 41;
-                }
-                if (startName === "NFA") {
-                    if (fare > 34) fare = 39;
-                }
-
             } else {
-                // Regular Logic
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
                 
-                // FIXED RATE: IT Park -> Mactan Newtown ONLY (51)
-                if (startName === "IT Park" && endName === "Mactan Newtown") {
+                // Fixed routes
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || 
+                    (startName === "Mactan Newtown" && endName === "IT Park")) {
                     fare = 51; 
                 }
             }
@@ -775,6 +842,9 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     const safeStart = startName.length > 15 ? startName.substring(0, 15) + '...' : startName;
                     const safeEnd = endName.length > 15 ? endName.substring(0, 15) + '...' : endName;
 
+                    // --- NEW SHARE TEXT GENERATION ---
+                    const shareText = `🚍 Bustle Trip: ${startName} ➝ ${endName} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
+
                     resultDisplay.innerHTML = `
                         <div class="fd-body">
                             <div class="fd-route">
@@ -783,7 +853,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                                 <div><span class="fd-label">Finish</span><span class="fd-address">${safeEnd}</span></div>
                             </div>
                             <div class="fd-info">
-                                <span class="fd-info-label">Total Fare</span>
+                                <span class="fd-info-label">Total Fare <button class="copy-btn" onclick="copyToClipboard('${shareText}', this)">Copy</button></span>
                                 <span class="fd-price">₱ ${finalFare}</span>
                                 <span class="fd-time">Estimated Time~${timeString}</span>
                             </div>
@@ -797,6 +867,22 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 
                 } else { resultDisplay.innerHTML = `Error <span class="fare-details">No route found</span>`; }
             } catch (error) { console.error(error); resultDisplay.innerHTML = `Error <span class="fare-details">Connection failed</span>`; }
+        }
+
+        // --- 8. COPY TO CLIPBOARD FUNCTION ---
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = "Copied!";
+                btnElement.classList.add('copied');
+                
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
         }
 
         // --- INPUT HANDLERS ---

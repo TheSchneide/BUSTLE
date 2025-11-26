@@ -347,6 +347,30 @@ form {
     opacity: 1;
 }
 
+/* ========== IOS FIXES FOR DATE INPUT ========== */
+input[type="date"] {
+    -webkit-appearance: none;  /* Removes native iOS styling */
+    appearance: none;
+    display: block;
+    
+    /* Enforce matching styles */
+    background-color: #eee;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    
+    /* Font & Text */
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+    
+    /* Sizing - Matches .inputBox input */
+    width: 100%;
+    padding: 13px 50px 13px 20px; /* Right padding 50px avoids text hitting the icon */
+    min-height: 45px; /* Ensures decent tap target size */
+}
+
 /* ========== MOBILE FIXES ========== */
 @media (max-width: 768px) {
     /* Container adapts to mobile */
@@ -417,4 +441,3 @@ form {
         text-align: center !important;
     }
 }
-
