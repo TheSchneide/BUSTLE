@@ -318,10 +318,16 @@ hr {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    vertical-align: middle; /* Added to vertically center inputs */
 }
 .admin-table th {
     background-color: #f9f9f9;
     color: #4F200D;
+}
+/* Ensure input and button alignment consistency */
+.admin-table input, 
+.admin-table button {
+    vertical-align: middle;
 }
 
 .Content{
