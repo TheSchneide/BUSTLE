@@ -159,7 +159,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     </div>
 
     <script>
-
         // --- DROPDOWN LOGIC FOR TRACKER ---
         document.addEventListener('click', (e) => {
             const dropBtn = e.target.closest('.dropbtn');
@@ -350,11 +349,17 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             if (isStudent) {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
-                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 41; 
+                // Special Route: IT Park <-> Mactan Newtown
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 41;
+                // Special Route: IT Park <-> Saac (NEW)
+                if ((startName === "IT Park" && endName === "Saac") || (startName === "Saac" && endName === "IT Park")) fare = 29;
             } else {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
+                // Special Route: IT Park <-> Mactan Newtown
                 if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 51; 
+                // Special Route: IT Park <-> Saac (NEW - Regular Price Calculation if needed, or default)
+                // Assuming Regular fare follows standard logic unless specified otherwise
             }
             if (fare < 13.00) fare = 13.00;
             return Math.round(fare);
@@ -399,9 +404,90 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             sheetTitle.innerText = "BUS";
             if (currentRouteLayer) map.removeLayer(currentRouteLayer);
 
+            // --- UPDATED ROUTING LOGIC START ---
             let routeStops = [];
-            if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); }
-            else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
+            // Parse IDs as integers for reliable comparison
+            const pIDVal = parseInt(stops[pIndex].id);
+            const dIDVal = parseInt(stops[dIndex].id);
+            let customRoute = false;
+
+            // Scenario 1: Pickup 2-31 (Changed from 1-31), Descending (Dest < Pickup)
+            // "if the user will input a pick up point of id number that starts at 31 down to id number 2"
+            if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
+                // Descending ID order strictly
+                routeStops = stops.filter(s => {
+                    const sid = parseInt(s.id);
+                    return sid <= pIDVal && sid >= dIDVal;
+                }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                customRoute = true;
+            }
+            
+            // Scenario 2: Pickup 1 OR >= 32
+            // "That if its pick up point if from id number 1, it starts from id number 32"
+            else if (pIDVal == 1 || pIDVal >= 32) {
+                
+                // Sub-scenario: Destination 24-31 (Loop via 49)
+                if (dIDVal >= 24 && dIDVal <= 31) {
+                    let part1 = [];
+                    if (pIDVal == 1) {
+                        // ID 1 then jump to 32 -> 49
+                        const stop1 = stops.filter(s => parseInt(s.id) == 1);
+                        const stops32to49 = stops.filter(s => {
+                            const sid = parseInt(s.id);
+                            return sid >= 32 && sid <= 49;
+                        }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                        part1 = stop1.concat(stops32to49);
+                    } else {
+                        // Standard >=32 ascending to 49
+                        part1 = stops.filter(s => {
+                            const sid = parseInt(s.id);
+                            return sid >= pIDVal && sid <= 49;
+                        }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                    }
+
+                    // Part 2: 24 -> Destination (Ascending)
+                    const part2 = stops.filter(s => {
+                        const sid = parseInt(s.id);
+                        return sid >= 24 && sid <= dIDVal;
+                    }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                    
+                    routeStops = part1.concat(part2);
+                    customRoute = true;
+                }
+                
+                // Sub-scenario: Standard Forward (Dest <= 49)
+                else if (dIDVal <= 49) {
+                    if (pIDVal == 1) {
+                         // Logic for ID 1 going to standard dests (likely 32+)
+                         // "it starts from id number 32"
+                         if (dIDVal >= 32) {
+                             const stop1 = stops.filter(s => parseInt(s.id) == 1);
+                             const stops32toDest = stops.filter(s => {
+                                const sid = parseInt(s.id);
+                                return sid >= 32 && sid <= dIDVal;
+                             }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                             routeStops = stop1.concat(stops32toDest);
+                             customRoute = true;
+                         }
+                    } else {
+                        // Standard logic for 32+
+                        if (dIDVal > pIDVal) {
+                             routeStops = stops.filter(s => {
+                                const sid = parseInt(s.id);
+                                return sid >= pIDVal && sid <= dIDVal;
+                             }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                             customRoute = true;
+                        }
+                    }
+                }
+            }
+
+            // Fallback to original array-index-based logic if no custom rule applied
+            if (!customRoute) {
+                if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); }
+                else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
+            }
+            // --- UPDATED ROUTING LOGIC END ---
 
             const coordsString = routeStops.map(s => `${s.lng},${s.lat}`).join(';');
             const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=full&geometries=geojson`;
