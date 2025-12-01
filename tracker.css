@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
@@ -8,7 +9,7 @@ html, body {
   background: white;
   display: flex;
   flex-direction: column;
-  overscroll-behavior-y: none; 
+  overscroll-behavior-y: none;
   touch-action: pan-x pan-y;
 }
 
@@ -33,6 +34,26 @@ header {
 .Navigation a {
   text-decoration: none;
   color: #4F200D;
+  position: relative;
+  padding-bottom: 5px;
+}
+
+/* --- 1. NAVBAR HOVER ANIMATION --- */
+.Navigation a::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 3px;
+  bottom: 0;
+  left: 50%;
+  background-color: #4F200D;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+.Navigation a:hover::after {
+  border-width: 5px;
 }
 
 #logo {
@@ -66,87 +87,149 @@ header {
   min-height: 300px;
 }
 
+/* --- 2. RECENTER BUTTON --- */
+.recenter-btn {
+  position: absolute;
+  bottom: 90px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.recenter-btn:hover {
+  background: #f9f9f9;
+  transform: scale(1.05);
+}
+
+.recenter-btn i {
+  font-size: 20px;
+  color: #4F200D;
+}
+
+/* --- 3. USER LOCATION MARKER --- */
+.user-dot {
+  width: 16px;
+  height: 16px;
+  background-color: #2196F3;
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.user-dot::after {
+  content: '';
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background-color: rgba(33, 150, 243, 0.4);
+  animation: pulse 2s infinite;
+  z-index: -1;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
 /* --- Bottom Sheet Styles --- */
 .bottom-sheet {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #fff;
-    border-radius: 20px 20px 0 0;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-    z-index: 1001;
-    
-    /* Default state: Hiding everything except the 60px header */
-    transform: translateY(calc(100% - 60px));
-    
-    /* Smooth animation for snapping */
-    transition: transform 0.3s ease-out;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1001;
+  transform: translateY(calc(100% - 60px));
+  transition: transform 0.3s ease-out;
 }
 
-/* Class to disable animation WHILE dragging so it follows your finger instantly */
 .bottom-sheet.dragging {
-    transition: none;
+  transition: none;
 }
 
-/* Expanded State */
 .bottom-sheet.expanded {
-    transform: translateY(0);
+  transform: translateY(0);
 }
 
 .sheet-header {
-    height: 60px;
-    background: #FF9A00;
-    border-radius: 20px 20px 0 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    position: relative;
-    /* IMPORTANT: Prevents the browser from scrolling the page when you drag the handle */
-    touch-action: none; 
+  height: 60px;
+  background: #FF9A00;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  position: relative;
+  touch-action: none;
 }
 
 .sheet-header:active {
-    cursor: grabbing;
+  cursor: grabbing;
 }
 
 .sheet-handle-bar {
-    width: 40px;
-    height: 4px;
-    background: rgba(0,0,0,0.2);
-    border-radius: 2px;
-    margin-bottom: 5px;
+  width: 40px;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+  margin-bottom: 5px;
 }
+
 .sheet-title {
-    font-family: 'Caprasimo', cursive;
-    font-size: 1.2rem;
-    color: #4F200D;
-    margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #4F200D;
+  margin: 0;
 }
+
 .sheet-content {
-    padding: 25px;
-    background: #fff;
-    overflow-y: auto;
-    /* Prevent content from being hidden behind header calculation */
-    height: 70vh; 
+  padding: 25px;
+  background: #fff;
+  overflow-y: auto;
+  height: 70vh;
 }
+
 .sheet-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease-in-out;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
 }
+
 .sheet-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 footer {
@@ -167,41 +250,6 @@ footer a {
   font-weight: bold;
 }
 
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-
-@keyframes slideDown {
-  from { 
-    transform: translateY(-30px); 
-    opacity: 0; 
-  }
-  to { 
-    transform: translateY(0); 
-    opacity: 1; 
-  }
-}
-
-@keyframes fadeOut {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
-
-@keyframes slideUp {
-  from { 
-    transform: translateY(0);
-    opacity: 1; 
-  }
-  to { 
-    transform: translateY(-30px); 
-    opacity: 0; 
-  }
-}
-
 @media (max-width: 768px) {
   #logo {
     font-size: 2rem;
@@ -219,9 +267,7 @@ footer a {
   }
 }
 
-
-/* --- Add this to the bottom of tracker.css --- */
-
+/* --- Common Styles --- */
 .modalContent h2 {
   margin-top: 0;
   color: #4F200D;
@@ -250,10 +296,8 @@ footer a {
   background-color: #f9f9f9;
 }
 
-/* --- Ticket Style Fare Display --- */
 .fare-display {
-  /* The yellow background from your image */
-  background-color: #FF9A00; 
+  background-color: #FF9A00;
   color: #4F200D;
   padding: 20px 25px;
   border-radius: 16px;
@@ -261,11 +305,10 @@ footer a {
   position: relative;
   box-shadow: 0 10px 25px rgba(255, 193, 7, 0.3);
   font-family: 'Outfit', sans-serif;
-  text-align: left; /* Reset alignment */
+  text-align: left;
   font-size: 30px;
 }
 
-/* Top Header (Handle + BUS + Heart) */
 .fd-header {
   text-align: center;
   margin-bottom: 15px;
@@ -289,23 +332,12 @@ footer a {
   text-transform: uppercase;
 }
 
-.fd-heart {
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-size: 20px;
-  /* This is visual only since you have the star button */
-  opacity: 0.5; 
-}
-
-/* Body Layout (Left: Route, Right: Price) */
 .fd-body {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end; /* Align to bottom */
+  align-items: flex-end;
 }
 
-/* Left Side: Route Details */
 .fd-route {
   flex: 1;
   padding-right: 10px;
@@ -316,32 +348,29 @@ footer a {
 
 .fd-label {
   font-weight: 800;
-  font-size: 20px;
-  padding-right: 10px;
+  font-size: 14px;
   color: #4F200D;
   display: inline-block;
-  width: 50px; /* Fixed width for alignment */
+  width: 50px;
 }
 
 .fd-address {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 400;
   opacity: 0.9;
 }
 
 .fd-arrow {
-  font-size: 20px;
+  font-size: 14px;
   color: #4F200D;
-  margin-left: 18px; /* Aligns arrow under the labels */
+  margin-left: 18px;
   margin-top: -2px;
   margin-bottom: -2px;
 }
 
-/* Right Side: Price & Time */
 .fd-info {
   text-align: right;
   min-width: 100px;
-  margin-bottom: 5px;
 }
 
 .fd-info-label {
@@ -373,373 +402,457 @@ footer a {
   display: block;
 }
 
-/* --- Autocomplete Dropdown Styles --- */
 .search-wrapper {
-    position: relative; /* vital for positioning the dropdown */
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
-/* --- Modern Input & Search Styles --- */
-
 .input-group {
-    margin-bottom: 25px;
-    position: relative;
+  margin-bottom: 25px;
+  position: relative;
 }
 
 .input-label {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: #4F200D;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4F200D;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* Styled Search Input */
 .clean-input {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-family: 'Outfit', sans-serif;
-    font-size: 1rem;
-    background: #fcfcfc;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-    box-sizing: border-box; /* Ensures padding doesn't break width */
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  background: #fcfcfc;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
 .clean-input:focus {
-    border-color: #FF9A00;
-    background: #fff;
-    outline: none;
-    box-shadow: 0 4px 10px rgba(255, 154, 0, 0.2);
+  border-color: #FF9A00;
+  background: #fff;
+  outline: none;
+  box-shadow: 0 4px 10px rgba(255, 154, 0, 0.2);
 }
 
-/* The Dropdown List for Suggestions */
 .suggestions-list {
-    position: absolute;
-    top: 45px; /* Adjust based on input height */
-    left: 0;
-    width: 100%;
-    background: white;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    z-index: 1002; /* Higher than bottom sheet */
-    max-height: 220px;
-    overflow-y: auto;
-    display: none;
+  position: absolute;
+  top: 45px;
+  left: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  z-index: 1002;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
 }
 
 .suggestions-list div {
-    padding: 12px 15px;
-    cursor: pointer;
-    border-bottom: 1px solid #f5f5f5;
-    transition: background 0.2s;
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.2s;
 }
 
 .suggestions-list div:hover {
-    background-color: #fff4e0;
+  background-color: #fff4e0;
 }
 
 .suggestions-list strong {
-    color: #4F200D;
-    display: block;
+  color: #4F200D;
+  display: block;
 }
 
 .suggestions-list small {
-    color: #888;
+  color: #888;
 }
 
-/* "OR" Divider */
 .divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    color: #aaa;
-    font-size: 0.8rem;
-    margin: 10px 0;
-}
-.divider::before, .divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #eee;
-}
-.divider span {
-    padding: 0 10px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #aaa;
+  font-size: 0.8rem;
+  margin: 10px 0;
 }
 
-/* Styled Dropdown (Select) */
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #eee;
+}
+
+.divider span {
+  padding: 0 10px;
+}
+
 .styled-select {
-    width: 100%;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    background-color: #f9f9f9;
-    color: #555;
-    font-family: 'Outfit', sans-serif;
-    cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+  background-color: #f9f9f9;
+  color: #555;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
 }
 
 .styled-select:focus {
-    border-color: #FF9A00;
-    outline: none;
+  border-color: #FF9A00;
+  outline: none;
 }
 
 .helper-text {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 5px;
-    min-height: 20px; /* Prevents jumping */
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 5px;
+  min-height: 20px;
 }
 
-/* --- Toggle Switch Styles --- */
-.toggle-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
-    border: 1px solid #eee;
-}
-
-.toggle-label {
-    font-size: 1rem;
-    font-weight: bold;
-    color: #4F200D;
-    display: flex;
-    flex-direction: column;
-}
-
-.toggle-sublabel {
-    font-size: 0.8rem;
-    color: #888;
-    font-weight: normal;
-}
-
-/* The Switch */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 28px;
-}
-
-.switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: #FF9A00;
-}
-
-input:checked + .slider:before {
-    transform: translateX(22px);
-}
-
-/* --- 1. Header Row (Aligns "Pick-up" with Star) --- */
-.header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-}
-.header-row .input-label { margin-bottom: 0; }
-
-/* --- 2. Star Save Button (Outline vs Filled) --- */
-.star-btn {
-    background: none;
-    border: none;
-    font-size: 1.8rem;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: transform 0.2s;
-    color: transparent; /* Transparent center */
-    -webkit-text-stroke: 2px #FF9A00; /* Orange Outline */
-}
-.star-btn.active {
-    color: #FF9A00; /* Solid Orange */
-    -webkit-text-stroke: 0;
-    transform: scale(1.2);
-    filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
-}
-.star-btn:disabled {
-    -webkit-text-stroke: 2px #ccc; 
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-/* --- 3. Swap Button (UPDATED) --- */
-.swap-container {
-    width: 100%;
-    display: flex;
-    justify-content: center; /* Centered */
-    margin-top: -20px;
-    margin-bottom: -20px;
-    position: relative;
-    z-index: 10;
-    box-sizing: border-box;
-    pointer-events: none; /* KEY FIX: Pass clicks through invisible container */
-}
-
-.swap-btn {
-    background: white;
-    border: 2px solid #eee;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    transition: transform 0.2s, background 0.2s;
-    pointer-events: auto; /* KEY FIX: Re-enable clicks for the button */
-}
-
-.swap-btn:hover {
-    background: #f0f0f0;
-    transform: rotate(180deg);
-}
-.swap-icon {
-    font-size: 18px;
-    color: #FF9A00;
-    font-weight: bold;
-}
-
-/* --- 4. Info Badge --- */
 .info-badge-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
-    border: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  border: 1px solid #eee;
 }
-.info-badge {
-    padding: 5px 15px;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-}
-.badge-active { background: #FF9A00; color: white; }
-.badge-regular { background: #ccc; color: #666; }
 
-/* --- Map Pick Styles --- */
+.info-badge {
+  padding: 5px 15px;
+  border-radius: 15px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.badge-active {
+  background: #FF9A00;
+  color: white;
+}
+
+.badge-regular {
+  background: #ccc;
+  color: #666;
+}
+
 .map-pick-btn {
-    background: #FF9A00;
-    border: none;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    margin-left: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: background 0.2s;
+  background: #FF9A00;
+  border: none;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s;
 }
 
 .map-pick-btn:hover {
-    background: #e08900;
+  background: #e08900;
 }
 
-/* Confirmation Modal */
 .confirm-overlay {
-    position: fixed;
-    top: 0; 
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 2000;
-    display: none;
-    align-items: center;
-    justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
 }
 
 .confirm-overlay.active {
-    display: flex;
+  display: flex;
 }
 
 .confirm-modal {
-    background: white;
-    width: 85%;
-    max-width: 350px;
-    border-radius: 16px;
-    padding: 25px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  background: white;
+  width: 85%;
+  max-width: 350px;
+  border-radius: 16px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .confirm-modal h3 {
-    margin-top: 0;
-    color: #4F200D;
-    font-family: Caprasimo;
-    font-size: 1.5rem;
+  margin-top: 0;
+  color: #4F200D;
+  font-family: Caprasimo;
+  font-size: 1.5rem;
 }
 
 .confirm-modal p {
-    color: #555;
-    margin-bottom: 20px;
+  color: #555;
+  margin-bottom: 20px;
 }
 
 .confirm-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
 }
 
-.btn-cancel, .btn-confirm {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-weight: bold;
-    cursor: pointer;
-    flex: 1;
+.btn-cancel,
+.btn-confirm {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  flex: 1;
 }
 
 .btn-cancel {
-    background: #eee;
-    color: #333;
+  background: #eee;
+  color: #333;
 }
 
 .btn-confirm {
-    background: #FF9A00;
-    color: white;
+  background: #FF9A00;
+  color: white;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.header-row .input-label {
+  margin-bottom: 0;
+}
+
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: transform 0.2s;
+  color: transparent;
+  -webkit-text-stroke: 2px #FF9A00;
+}
+
+.star-btn.active {
+  color: #FF9A00;
+  -webkit-text-stroke: 0;
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
+}
+
+.star-btn:disabled {
+  -webkit-text-stroke: 2px #ccc;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.swap-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: -20px;
+  margin-bottom: -20px;
+  position: relative;
+  z-index: 10;
+  padding-right: 10px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.swap-btn {
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, background 0.2s;
+  pointer-events: auto;
+}
+
+.swap-btn:hover {
+  background: #f0f0f0;
+  transform: rotate(180deg);
+}
+
+.swap-icon {
+  font-size: 18px;
+  color: #FF9A00;
+  font-weight: bold;
+}
+
+.rush-hour-banner {
+  position: fixed;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(90deg, #d32f2f, #f44336);
+  color: white;
+  padding: 15px 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  transition: top 0.5s ease-in-out;
+  font-family: 'Outfit', sans-serif;
+  box-sizing: border-box;
+}
+
+.rush-hour-banner.show {
+  top: 0;
+}
+
+.rush-content {
+  flex: 1;
+  text-align: center;
+}
+
+.rush-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 1rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.rush-msg {
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+.rush-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rush-close:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.copy-btn {
+  background: transparent;
+  border: 1px solid #4F200D;
+  color: #4F200D;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+  margin-left: 8px;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: #4F200D;
+  color: #FF9A00;
+  opacity: 1;
+}
+
+.copy-btn.copied {
+  background: #4F200D;
+  color: white;
+  content: "Copied!";
+}
+
+/* --- MAP TIP MODAL STYLES --- */
+.map-tip-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 3000;
+  /* Highest priority */
+  text-align: center;
+  width: 80%;
+  max-width: 300px;
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.map-tip-overlay.show {
+  display: block;
+}
+
+.map-tip-icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+}
+
+.map-tip-btn {
+  background: #FF9A00;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+/* --- BUTTON HIGHLIGHT --- */
+.tour-highlight {
+  animation: pulseGlow 1.5s infinite;
+  position: relative;
+  z-index: 1002;
+  /* Pop above overlay if we had one, or just emphasize */
+  box-shadow: 0 0 0 4px rgba(255, 154, 0, 0.6);
+  border-radius: 6px;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 154, 0, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 154, 0, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 154, 0, 0);
+  }
 }

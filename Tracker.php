@@ -2,19 +2,16 @@
 session_start();
 include 'Database.php';
 include 'SavedRoute.php';
-include 'Trip.php'; // Ensure Trip class is included for history
+include 'Trip.php'; 
 
-// Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
     exit();
 }
 
-// 1. Check Passenger Type (Calculated during Login)
 $isDiscounted = isset($_SESSION['is_discounted']) && $_SESSION['is_discounted'] === true;
 $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : "Regular";
 
-// 2. Fetch ALL Saved Routes for this user (For the Star button logic)
 $db = new Database();
 $savedObj = new SavedRoute($db->getConnection());
 $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
@@ -25,229 +22,13 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bustle - Fare Calculator</title>
-    <link rel="stylesheet" href="index.css"> <!-- Import Index CSS for Navbar Styles -->
+    <title>Bustle - Tracker</title>
+    <link rel="stylesheet" href="index.css"> <!-- Navbar Styles -->
     <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="icon" type="image/x-icon" href="busFavicon.png">
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="">
-        </script>
-    
-    <style>
-        /* --- CUSTOM STYLES FOR TRACKER PHP --- */
-        
-        /* 1. Header Row (Aligns "Pick-up" with Star) */
-        .header-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        .header-row .input-label { margin-bottom: 0; }
-
-        /* 2. Star Save Button (Outline vs Filled) */
-        .star-btn {
-            background: none;
-            border: none;
-            font-size: 1.8rem;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-            transition: transform 0.2s;
-            color: transparent; /* Transparent center */
-            -webkit-text-stroke: 2px #FF9A00; /* Orange Outline */
-        }
-        .star-btn.active {
-            color: #FF9A00; /* Solid Orange */
-            -webkit-text-stroke: 0;
-            transform: scale(1.2);
-            filter: drop-shadow(0 0 2px rgba(255, 154, 0, 0.5));
-        }
-        .star-btn:disabled {
-            -webkit-text-stroke: 2px #ccc; 
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        /* 3. Swap Button */
-        .swap-container {
-            width: 100%;
-            display: flex;
-            justify-content: flex-end;
-            margin-top: -15px;
-            margin-bottom: -15px;
-            position: relative;
-            z-index: 10;
-            padding-right: 10px;
-            box-sizing: border-box;
-        }
-        .swap-btn {
-            background: white;
-            border: 2px solid #eee;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s, background 0.2s;
-        }
-        .swap-btn:hover {
-            background: #f0f0f0;
-            transform: rotate(180deg);
-        }
-        .swap-icon {
-            font-size: 18px;
-            color: #FF9A00;
-            font-weight: bold;
-        }
-
-        /* 4. Info Badge (Replaces Toggle) */
-        .info-badge-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-radius: 10px;
-            border: 1px solid #eee;
-        }
-        .info-badge {
-            padding: 5px 15px;
-            border-radius: 15px;
-            font-weight: bold;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-        .badge-active { background: #FF9A00; color: white; }
-        .badge-regular { background: #ccc; color: #666; }
-
-        /* --- 5. RUSH HOUR NOTIFICATION STYLES --- */
-        .rush-hour-banner {
-            position: fixed;
-            top: -100px; /* Start hidden above screen */
-            left: 0;
-            width: 100%;
-            background: linear-gradient(90deg, #d32f2f, #f44336);
-            color: white;
-            padding: 15px 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            z-index: 2000; /* Above everything */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            transition: top 0.5s ease-in-out;
-            font-family: 'Outfit', sans-serif;
-            box-sizing: border-box;
-        }
-        
-        .rush-hour-banner.show {
-            top: 0;
-        }
-
-        .rush-content {
-            flex: 1;
-            text-align: center;
-        }
-
-        .rush-title {
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 1rem;
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .rush-msg {
-            font-size: 0.9rem;
-            opacity: 0.95;
-        }
-
-        .rush-close {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .rush-close:hover {
-            background: rgba(255,255,255,0.4);
-        }
-
-        /* --- 6. COPY/SHARE BUTTON STYLES --- */
-        .copy-btn {
-            background: transparent;
-            border: 1px solid #4F200D;
-            color: #4F200D;
-            border-radius: 4px;
-            font-size: 10px;
-            padding: 2px 6px;
-            cursor: pointer;
-            margin-left: 8px;
-            text-transform: uppercase;
-            font-weight: bold;
-            opacity: 0.6;
-            transition: all 0.2s;
-        }
-        .copy-btn:hover {
-            background: #4F200D;
-            color: #FF9A00;
-            opacity: 1;
-        }
-        .copy-btn.copied {
-            background: #4F200D;
-            color: white;
-            content: "Copied!";
-        }
-
-        /* --- 7. FIRST TIME MAP TIP --- */
-        .map-tip-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 3000; /* Very high */
-            text-align: center;
-            width: 80%;
-            max-width: 300px;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        .map-tip-overlay.show { display: block; }
-        .map-tip-icon { font-size: 40px; margin-bottom: 15px; }
-        .map-tip-btn {
-            background: #FF9A00;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-        
-        /* FIX: Ensure dropdown is visible on top of map */
-        .dropdown-content {
-            background: white;
-        }
-    </style>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 
 <body>
@@ -271,6 +52,11 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         <button class="map-tip-btn" onclick="closeMapTip()">Got it!</button>
     </div>
 
+    <!-- NEW: RECENTER BUTTON -->
+    <button id="recenterBtn" class="recenter-btn" onclick="recenterMap()" title="Locate Me">
+        <i class="fa-solid fa-location-crosshairs"></i>
+    </button>
+
     <header>
         <div class="Navigation">
             <div id="logo" data-anim="fade-up">
@@ -278,9 +64,9 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <a href="Tracker.php" class="tracker">Fare Calculator</a>
+                <!-- Renamed back to Tracker as requested -->
+                <a href="Tracker.php" class="tracker">Tracker</a>
                 
-                <!-- NEW NAVBAR DROPDOWN -->
                 <div class="dropdown">
                     <button class="dropbtn">
                         <i class="fa-solid fa-user"></i> 
@@ -311,7 +97,8 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 <div class="header-row">
                     <div>
                         <label class="input-label" style="display:inline;">Pick-up Point</label>
-                        <button class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Map</button>
+                        <!-- ADDED ID HERE FOR HIGHLIGHT -->
+                        <button id="pickupMapBtn" class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Map</button>
                     </div>
                     <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
                 </div>
@@ -378,12 +165,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         </div>
     </div>
 
-    <footer>
-        <a href="index.php">@Bustle.dcism.org</a>
-        <a href="">BustleCrew@gmail.com</a>
-        <a href="">+091234567</a>
-    </footer>
-
     <script>
         // --- CONFIGURATION ---
         const STUDENT_BASE_FARE = 13.00;
@@ -391,11 +172,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         const STUDENT_EXCESS_RATE = 2.56;
         const REGULAR_BASE_FARE = 13.00;
         const REGULAR_EXCESS_RATE = STUDENT_EXCESS_RATE / 0.8;
-
-        // --- PHP INJECTION ---
         const IS_DISCOUNTED = <?php echo $isDiscounted ? 'true' : 'false'; ?>;
-        
-        // Load all saved routes into JS Array: [{pickup_stop_id: 1, dropoff_stop_id: 5}, ...]
         const USER_SAVED_ROUTES = <?php echo json_encode($mySavedRoutes); ?>;
 
         // --- MAP SETUP ---
@@ -413,52 +190,25 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         const bottomSheet = document.getElementById('bottomSheet');
         const sheetHeader = document.getElementById('sheetHeader');
         const sheetOverlay = document.getElementById('sheetOverlay');
-
-        // New Elements for Map Picking
         const mapConfirmOverlay = document.getElementById('mapConfirmOverlay');
         const confirmText = document.getElementById('confirmText');
-        let pickingMode = null; // 'pickup' or 'dest' or null
+        
+        let pickingMode = null; 
         let tempSelectedStopIndex = -1;
-
         let currentRouteLayer = null;
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
+        
+        // --- NEW: USER LOCATION VARS ---
+        let userLat = null;
+        let userLng = null;
+        let userMarker = null;
 
         // --- DRAG VARS ---
         let startY = 0;
         let isDragging = false;
-        const getHiddenY = () => window.innerHeight - 90;
 
-        // --- RUSH HOUR LOGIC ---
-        function checkRushHour() {
-            const now = new Date();
-            const hour = now.getHours(); // 0-23
-            const banner = document.getElementById('rushHourBanner');
-
-            // Define Rush Hours: 
-            // Morning: 7 AM - 9 AM (7, 8)
-            // Evening: 4 PM - 8 PM (16, 17, 18, 19)
-            const isMorningRush = (hour >= 7 && hour < 9);
-            const isEveningRush = (hour >= 16 && hour < 20);
-
-            if (isMorningRush || isEveningRush) {
-                // Add a small delay for better UX (so it slides in)
-                setTimeout(() => {
-                    banner.classList.add('show');
-                }, 1000);
-            }
-        }
-
-        function closeRushBanner() {
-            const banner = document.getElementById('rushHourBanner');
-            banner.classList.remove('show');
-        }
-
-        // Call immediately on load
-        checkRushHour();
-
-
-        // --- 1. FETCH STOPS ---
+        // --- 1. INITIALIZATION ---
         async function fetchBusStops() {
             try {
                 const response = await fetch('get_stops.php');
@@ -478,27 +228,13 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
                 const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
-                
-                // --- NEW LOGIC FOR MARKER CLICK ---
                 marker.on('click', function(e) {
                     if (pickingMode) {
-                        // In picking mode: Show Custom Confirmation
                         showStopConfirmation(index);
-                        // Prevent map flyto or default popup behavior if needed
                         L.DomEvent.stopPropagation(e);
                     } else {
-                        // Normal mode: Show standard popup
                         this.bindPopup(`<b>${stop.name}</b>`).openPopup();
                     }
-                });
-                
-                marker.on('mouseover', function (e) { 
-                    if(!pickingMode) { // Only show popup on hover if not picking
-                        this.bindPopup(`<b>${stop.name}</b>`).openPopup(); 
-                    }
-                });
-                marker.on('mouseout', function (e) { 
-                    this.closePopup(); 
                 });
             });
         }
@@ -513,13 +249,17 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             });
         }
 
-        // --- NEW: PICK ON MAP LOGIC WITH TIP ---
-
+        // --- 2. MAP PICKING & HIGHLIGHT ---
         function startPickingLocation(type) {
             pickingMode = type;
             closeSheet();
             
-            // Check if user has seen the tip before
+            // Remove highlighting if user clicked the button
+            const btn = document.getElementById('pickupMapBtn');
+            btn.classList.remove('tour-highlight');
+            localStorage.setItem('hasSeenMapHighlight', 'true');
+
+            // Show instruction
             const hasSeenTip = localStorage.getItem('hasSeenMapTip');
             if (!hasSeenTip) {
                 document.getElementById('mapTip').classList.add('show');
@@ -533,264 +273,91 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 
         function showStopConfirmation(index) {
             tempSelectedStopIndex = index;
-            const stopName = stops[index].name;
-            const modeName = pickingMode === 'pickup' ? "Pick-up" : "Destination";
-            
-            confirmText.innerText = `Set "${stopName}" as your ${modeName}?`;
+            confirmText.innerText = `Set "${stops[index].name}" as your ${pickingMode === 'pickup' ? "Pick-up" : "Destination"}?`;
             mapConfirmOverlay.classList.add('active');
         }
 
         function confirmStopSelection() {
             if (tempSelectedStopIndex === -1 || !pickingMode) return;
-
-            // Set the value based on mode
             if (pickingMode === 'pickup') {
                 pickupSelect.value = tempSelectedStopIndex;
-                manualSelect('pickup', false); // false = don't double calculate yet
+                manualSelect('pickup', false);
             } else {
                 destSelect.value = tempSelectedStopIndex;
                 manualSelect('dest', false);
             }
-
-            // Clean up
             mapConfirmOverlay.classList.remove('active');
             pickingMode = null;
-            tempSelectedStopIndex = -1;
-
-            // Re-open sheet and calculate
             openSheet();
             calculateFare();
         }
 
         function cancelStopSelection() {
-            // Just close the confirmation modal, user is still in picking mode
-            // Or, per requirement: "opens bottom sheet back up and cancels feature"
-            
             mapConfirmOverlay.classList.remove('active');
-            
-            // Per instructions: "If they decline, it opens the bottom sheet back up and cancels the feature"
             pickingMode = null;
-            tempSelectedStopIndex = -1;
             openSheet();
         }
 
-
-        // --- 2. SWAP LOGIC ---
-        swapBtn.addEventListener('click', () => {
-            const tempSelect = pickupSelect.value;
-            pickupSelect.value = destSelect.value;
-            destSelect.value = tempSelect;
-
-            const tempText = pickupInput.value;
-            pickupInput.value = destInput.value;
-            destInput.value = tempText;
-
-            if (searchMarkers['pickup']) map.removeLayer(searchMarkers['pickup']);
-            if (searchMarkers['dest']) map.removeLayer(searchMarkers['dest']);
-
-            if(pickupSelect.value !== "") manualSelect('pickup', false);
-            if(destSelect.value !== "") manualSelect('dest', false);
-
-            calculateFare();
-        });
-
-        fetchBusStops();
-
-        // --- 3. URL PARAMS CHECK ---
-        function checkUrlParams() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const savedPickupId = urlParams.get('savedPickup');
-            const savedDropoffId = urlParams.get('savedDropoff');
-
-            if (savedPickupId && savedDropoffId) {
-                const pIndex = stops.findIndex(s => s.id == savedPickupId);
-                const dIndex = stops.findIndex(s => s.id == savedDropoffId);
-
-                if (pIndex !== -1 && dIndex !== -1) {
-                    openSheet();
-                    pickupSelect.value = pIndex;
-                    destSelect.value = dIndex;
-                    calculateFare();
-                }
-            }
-            else if (urlParams.get('autoLocate') === 'true') {
-                openSheet();
-                if (navigator.geolocation) {
-                    document.getElementById('pickupInput').value = "Locating you...";
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            findNearestStop(lat, lng, 'pickup', "Your Current Location");
-                        },
-                        (error) => {
-                            document.getElementById('pickupInput').value = "";
-                            document.getElementById('pickupMsg').innerText = "Could not detect location.";
-                        }
-                    );
-                }
+        // --- 3. RECENTER & USER LOCATION LOGIC ---
+        function locateUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLat = position.coords.latitude;
+                        userLng = position.coords.longitude;
+                        
+                        // Update Marker
+                        if(userMarker) map.removeLayer(userMarker);
+                        
+                        const userIcon = L.divIcon({
+                            className: 'user-dot-container',
+                            html: '<div class="user-dot"></div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        userMarker = L.marker([userLat, userLng], {icon: userIcon}).addTo(map);
+                    },
+                    (error) => console.log("Location permission denied")
+                );
             }
         }
 
-        function findNearestStop(lat, lng, type, label) {
-            let nearestIndex = -1; let minDistance = Infinity;
-            stops.forEach((stop, index) => {
-                const dist = map.distance([lat, lng], [stop.lat, stop.lng]);
-                if (dist < minDistance) { minDistance = dist; nearestIndex = index; }
-            });
-            if (nearestIndex !== -1) {
-                const selectBox = document.getElementById(type + 'Select');
-                const msg = document.getElementById(type + 'Msg');
-                const input = document.getElementById(type + 'Input');
-                selectBox.value = nearestIndex;
-                input.value = label;
-                const stopName = stops[nearestIndex].name;
-                msg.innerText = `Auto-selected: ${stopName} (${(minDistance / 1000).toFixed(2)}km away)`;
-                if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
-                searchMarkers[type] = L.marker([lat, lng]).addTo(map).bindPopup(`<b>${type.toUpperCase()}</b><br>${label}`).openPopup();
-                map.setView([lat, lng], 14);
-                calculateFare();
+        function recenterMap() {
+            if (userLat && userLng) {
+                map.flyTo([userLat, userLng], 15);
+            } else {
+                locateUser(); // Try again if null
+                // Small delay to allow update
+                setTimeout(() => { if(userLat) map.flyTo([userLat, userLng], 15); }, 1000);
             }
         }
 
-        // --- 4. SAVE ROUTE (STAR BUTTON) ---
-        async function updateSavedRoute() {
-            const pIndex = pickupSelect.value;
-            const dIndex = destSelect.value;
-            if (pIndex === "" || dIndex === "") return;
-
-            // Check visual state to determine action
-            const action = saveRouteBtn.classList.contains('active') ? 'save' : 'remove';
-            const pickupId = stops[pIndex].id;
-            const dropoffId = stops[dIndex].id;
-
-            const formData = new FormData();
-            formData.append('pickup_id', pickupId);
-            formData.append('dropoff_id', dropoffId);
-            formData.append('action', action);
-
-            try {
-                await fetch('save_route.php', { method: 'POST', body: formData });
-                console.log("Saved route: " + action);
-                
-                // Update Local Array so logic persists without reload
-                if (action === 'save') {
-                    USER_SAVED_ROUTES.push({pickup_stop_id: pickupId, dropoff_stop_id: dropoffId});
-                } else {
-                    const idx = USER_SAVED_ROUTES.findIndex(r => r.pickup_stop_id == pickupId && r.dropoff_stop_id == dropoffId);
-                    if (idx > -1) USER_SAVED_ROUTES.splice(idx, 1);
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        saveRouteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            // Toggle visual state immediately
-            saveRouteBtn.classList.toggle('active');
-            updateSavedRoute();
-        });
-
-        // --- 5. HELPER: COMPUTE FARE MATH (New Helper) ---
+        // --- 4. FARE & LOGIC ---
         function computeFareValue(distKm, startName, endName) {
             const isStudent = IS_DISCOUNTED;
             let billableDistance = distKm;
-
-            // 0.6km reduction for IT Park
             if (startName === "IT Park" || endName === "IT Park") {
                 billableDistance = Math.max(0, distKm - 0.6); 
             }
-
             let fare = 0;
             if (isStudent) {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
-                
-                // Fixed routes
-                if ((startName === "IT Park" && endName === "Mactan Newtown") || 
-                    (startName === "Mactan Newtown" && endName === "IT Park")) {
-                    fare = 41; 
-                }
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 41; 
             } else {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
-                
-                // Fixed routes
-                if ((startName === "IT Park" && endName === "Mactan Newtown") || 
-                    (startName === "Mactan Newtown" && endName === "IT Park")) {
-                    fare = 51; 
-                }
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 51; 
             }
-
-            // Minimum Floor
             if (fare < 13.00) fare = 13.00;
-            
             return Math.round(fare);
         }
 
-        // --- 6. NEW: CALCULATE RANGE (Only Pickup Selected) ---
-        async function calculateRange(pIndex) {
-            const pickupStop = stops[pIndex];
-            if (!pickupStop) return;
-
-            // Update UI to "Loading" state
-            document.getElementById('fareResult').innerHTML = `<div style="padding:10px; text-align:center;">Calculating range...</div>`;
-            
-            // 1. Find farthest stop via Straight Line (to minimize API calls)
-            let maxDist = 0;
-            let farthestIndex = -1;
-
-            stops.forEach((stop, i) => {
-                if (i == pIndex) return;
-                const dist = map.distance([pickupStop.lat, pickupStop.lng], [stop.lat, stop.lng]);
-                if (dist > maxDist) {
-                    maxDist = dist;
-                    farthestIndex = i;
-                }
-            });
-
-            if (farthestIndex === -1) return; // Should not happen if >1 stop
-
-            // 2. Fetch OSRM for that ONE farthest stop to get accurate Max Fare
-            const destStop = stops[farthestIndex];
-            const coordsString = `${pickupStop.lng},${pickupStop.lat};${destStop.lng},${destStop.lat}`;
-            const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=false`;
-
-            try {
-                const response = await fetch(routeURL);
-                const data = await response.json();
-                
-                if (data.routes && data.routes.length > 0) {
-                    const distKm = data.routes[0].distance / 1000;
-                    const maxFare = computeFareValue(distKm, pickupStop.name, destStop.name);
-                    const minFare = 13; // Base fare is almost always the minimum
-
-                    // Update UI
-                    const rangeText = `₱ ${minFare} - ₱ ${maxFare}`;
-                    sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">${rangeText}</span>`;
-                    
-                    document.getElementById('fareResult').innerHTML = `
-                        <div class="fd-body" style="justify-content: center;">
-                            <div class="fd-info" style="text-align: center; width: 100%;">
-                                <span class="fd-info-label">Estimated Fare Range</span>
-                                <span class="fd-price">${rangeText}</span>
-                                <span class="fd-time" style="font-weight:normal; font-size: 0.9rem; opacity: 0.8;">From ${pickupStop.name}</span>
-                            </div>
-                        </div>
-                    `;
-                }
-            } catch(e) {
-                console.error("Range calc error", e);
-            }
-        }
-
-
-        // --- 7. CALCULATE FARE (Updated to use Helper) ---
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
             const resultDisplay = document.getElementById('fareResult');
-            
-            // IF PICKUP IS SET BUT DESTINATION IS EMPTY -> SHOW RANGE
+
             if (pickupVal !== "" && destVal === "") {
                 calculateRange(parseInt(pickupVal));
                 saveRouteBtn.disabled = true;
@@ -805,13 +372,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
 
             saveRouteBtn.disabled = false;
-
-            // Check if this route is already saved (Update Star)
-            const currentPickupId = stops[pickupVal].id;
-            const currentDropoffId = stops[destVal].id;
-            const isSaved = USER_SAVED_ROUTES.some(r => r.pickup_stop_id == currentPickupId && r.dropoff_stop_id == currentDropoffId);
-            if (isSaved) saveRouteBtn.classList.add('active');
-            else saveRouteBtn.classList.remove('active');
+            
+            // Check star status
+            const pId = stops[pickupVal].id;
+            const dId = stops[destVal].id;
+            const isSaved = USER_SAVED_ROUTES.some(r => r.pickup_stop_id == pId && r.dropoff_stop_id == dId);
+            if (isSaved) saveRouteBtn.classList.add('active'); else saveRouteBtn.classList.remove('active');
 
             const pIndex = parseInt(pickupVal);
             const dIndex = parseInt(destVal);
@@ -838,39 +404,21 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 const data = await response.json();
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
-                    const actualDistanceKm = route.distance / 1000;
-                    
-                    // Time Calc
-                    const avgSpeed = 20; 
-                    const timeInMinutes = Math.round((actualDistanceKm / avgSpeed) * 60);
-                    let timeString = `${timeInMinutes} min`;
-                    if (timeInMinutes >= 60) {
-                        const hrs = Math.floor(timeInMinutes / 60);
-                        const mins = timeInMinutes % 60;
-                        timeString = `${hrs} hr ${mins} min`;
-                    }
+                    const distKm = route.distance / 1000;
+                    const timeInMinutes = Math.round((distKm / 20) * 60);
+                    let timeString = timeInMinutes >= 60 ? `${Math.floor(timeInMinutes / 60)} hr ${timeInMinutes % 60} min` : `${timeInMinutes} min`;
 
-                    const startName = stops[pIndex].name;
-                    const endName = stops[dIndex].name;
-
-                    // USE HELPER FOR FARE MATH
-                    const finalFare = computeFareValue(actualDistanceKm, startName, endName);
-
+                    const finalFare = computeFareValue(distKm, stops[pIndex].name, stops[dIndex].name);
                     sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
 
-                    // Ticket Style Output
-                    const safeStart = startName.length > 15 ? startName.substring(0, 15) + '...' : startName;
-                    const safeEnd = endName.length > 15 ? endName.substring(0, 15) + '...' : endName;
-
-                    // --- NEW SHARE TEXT GENERATION ---
-                    const shareText = `🚍 Bustle Trip: ${startName} ➝ ${endName} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
+                    const shareText = `🚍 Bustle Trip: ${stops[pIndex].name} ➝ ${stops[dIndex].name} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
 
                     resultDisplay.innerHTML = `
                         <div class="fd-body">
                             <div class="fd-route">
-                                <div><span class="fd-label">Start</span><span class="fd-address">${safeStart}</span></div>
+                                <div><span class="fd-label">Start</span><span class="fd-address">${stops[pIndex].name}</span></div>
                                 <div class="fd-arrow">↓</div>
-                                <div><span class="fd-label">Finish</span><span class="fd-address">${safeEnd}</span></div>
+                                <div><span class="fd-label">Finish</span><span class="fd-address">${stops[dIndex].name}</span></div>
                             </div>
                             <div class="fd-info">
                                 <span class="fd-info-label">Total Fare <button class="copy-btn" onclick="copyToClipboard('${shareText}', this)">Copy</button></span>
@@ -879,33 +427,53 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                             </div>
                         </div>
                     `;
-                    
                     currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
-                    
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
-
-                } else { resultDisplay.innerHTML = `Error <span class="fare-details">No route found</span>`; }
-            } catch (error) { console.error(error); resultDisplay.innerHTML = `Error <span class="fare-details">Connection failed</span>`; }
+                }
+            } catch (error) { console.error(error); }
         }
 
-        // --- 8. COPY TO CLIPBOARD FUNCTION ---
-        function copyToClipboard(text, btnElement) {
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btnElement.innerText;
-                btnElement.innerText = "Copied!";
-                btnElement.classList.add('copied');
-                
-                setTimeout(() => {
-                    btnElement.innerText = originalText;
-                    btnElement.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
+        async function calculateRange(pIndex) {
+            const pickupStop = stops[pIndex];
+            if (!pickupStop) return;
+            document.getElementById('fareResult').innerHTML = `<div style="padding:10px; text-align:center;">Calculating range...</div>`;
+            
+            let maxDist = 0;
+            let farthestIndex = -1;
+            stops.forEach((stop, i) => {
+                if (i == pIndex) return;
+                const dist = map.distance([pickupStop.lat, pickupStop.lng], [stop.lat, stop.lng]);
+                if (dist > maxDist) { maxDist = dist; farthestIndex = i; }
             });
+
+            if (farthestIndex === -1) return;
+            const destStop = stops[farthestIndex];
+            const coordsString = `${pickupStop.lng},${pickupStop.lat};${destStop.lng},${destStop.lat}`;
+            const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=false`;
+
+            try {
+                const response = await fetch(routeURL);
+                const data = await response.json();
+                if (data.routes && data.routes.length > 0) {
+                    const distKm = data.routes[0].distance / 1000;
+                    const maxFare = computeFareValue(distKm, pickupStop.name, destStop.name);
+                    const minFare = 13;
+                    const rangeText = `₱ ${minFare} - ₱ ${maxFare}`;
+                    sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">${rangeText}</span>`;
+                    document.getElementById('fareResult').innerHTML = `
+                        <div class="fd-body" style="justify-content: center;">
+                            <div class="fd-info" style="text-align: center; width: 100%;">
+                                <span class="fd-info-label">Estimated Fare Range</span>
+                                <span class="fd-price">${rangeText}</span>
+                                <span class="fd-time" style="font-weight:normal; font-size: 0.9rem; opacity: 0.8;">From ${pickupStop.name}</span>
+                            </div>
+                        </div>`;
+                }
+            } catch(e) { console.error("Range calc error", e); }
         }
 
-        // --- INPUT HANDLERS ---
+        // --- INPUT & UI HANDLERS ---
         document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
         document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
 
@@ -918,8 +486,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         }
 
         async function fetchSuggestions(query, listElement, type) {
-            const viewbox = '123.70,10.50,124.10,10.10';
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ph&viewbox=${viewbox}&bounded=1&limit=5`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=ph&viewbox=123.70,10.50,124.10,10.10&bounded=1&limit=5`;
             try {
                 const response = await fetch(url);
                 const results = await response.json();
@@ -928,8 +495,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     listElement.style.display = 'block';
                     results.forEach(place => {
                         const div = document.createElement('div');
-                        const displayName = place.display_name.split(',')[0];
-                        div.innerHTML = `<strong>${displayName}</strong>`;
+                        div.innerHTML = `<strong>${place.display_name.split(',')[0]}</strong>`;
                         div.addEventListener('click', () => {
                             const lat = parseFloat(place.lat); const lng = parseFloat(place.lon);
                             findNearestStop(lat, lng, type, place.display_name.split(',')[0]);
@@ -957,24 +523,40 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             if(doCalc) calculateFare();
         }
 
-        async function saveTripToHistory(pickupId, dropoffId, amount) {
-            const formData = new FormData();
-            formData.append('pickup_id', pickupId);
-            formData.append('dropoff_id', dropoffId);
-            formData.append('fare', amount);
-            try { await fetch('save_trip.php', { method: 'POST', body: formData }); } catch (e) { }
+        async function saveTripToHistory(pId, dId, amt) {
+            const fd = new FormData(); fd.append('pickup_id', pId); fd.append('dropoff_id', dId); fd.append('fare', amt);
+            await fetch('save_trip.php', { method: 'POST', body: fd });
         }
+
+        async function updateSavedRoute() {
+            const pIndex = pickupSelect.value;
+            const dIndex = destSelect.value;
+            if (pIndex === "" || dIndex === "") return;
+            const action = saveRouteBtn.classList.contains('active') ? 'save' : 'remove';
+            const formData = new FormData();
+            formData.append('pickup_id', stops[pIndex].id);
+            formData.append('dropoff_id', stops[dIndex].id);
+            formData.append('action', action);
+            try { await fetch('save_route.php', { method: 'POST', body: formData }); } catch(e) {}
+        }
+
+        saveRouteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            saveRouteBtn.classList.toggle('active');
+            updateSavedRoute();
+        });
 
         // --- DRAG LOGIC ---
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
             bottomSheet.style.transform = ""; 
+            if(pickingMode) { pickingMode = null; }
             
-            // --- NEW: Cancel picking mode if user manually opens sheet ---
-            if(pickingMode) {
-                pickingMode = null;
-                console.log("Picking mode cancelled by manual sheet open");
+            // --- NEW: Highlight Map Button if first time ---
+            const hasSeenHighlight = localStorage.getItem('hasSeenMapHighlight');
+            if(!hasSeenHighlight) {
+                document.getElementById('pickupMapBtn').classList.add('tour-highlight');
             }
         }
         function closeSheet() {
@@ -995,9 +577,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const touchY = e.touches[0].clientY;
             const deltaY = touchY - startY;
             const isExpanded = bottomSheet.classList.contains('expanded');
-            if (isExpanded && deltaY > 0) {
-                 bottomSheet.style.transform = `translateY(${deltaY}px)`;
-            } 
+            if (isExpanded && deltaY > 0) bottomSheet.style.transform = `translateY(${deltaY}px)`;
         }, { passive: false });
 
         sheetHeader.addEventListener('touchend', (e) => {
@@ -1008,11 +588,9 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const isExpanded = bottomSheet.classList.contains('expanded');
             const threshold = 100; 
             if (isExpanded) {
-                if (deltaY > threshold) closeSheet();
-                else openSheet(); 
+                if (deltaY > threshold) closeSheet(); else openSheet(); 
             } else {
-                if (deltaY < -threshold) openSheet();
-                else closeSheet(); 
+                if (deltaY < -threshold) openSheet(); else closeSheet(); 
             }
         });
 
@@ -1021,14 +599,60 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             else openSheet();
         });
 
-        // Mobile Dropdown Toggle
-        document.querySelectorAll('.dropdown').forEach(d => {
-            d.addEventListener('click', () => {
-                d.classList.toggle('active');
-            });
+        sheetOverlay.addEventListener('click', closeSheet);
+        swapBtn.addEventListener('click', () => {
+            const tempVal = pickupSelect.value;
+            pickupSelect.value = destSelect.value;
+            destSelect.value = tempVal;
+            const tempText = pickupInput.value;
+            pickupInput.value = destInput.value;
+            destInput.value = tempText;
+            calculateFare();
         });
 
-        sheetOverlay.addEventListener('click', closeSheet);
+        // --- CHECKS ---
+        function checkUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const savedPickupId = urlParams.get('savedPickup');
+            const savedDropoffId = urlParams.get('savedDropoff');
+            if (savedPickupId && savedDropoffId) {
+                const pIndex = stops.findIndex(s => s.id == savedPickupId);
+                const dIndex = stops.findIndex(s => s.id == savedDropoffId);
+                if (pIndex !== -1 && dIndex !== -1) {
+                    openSheet();
+                    pickupSelect.value = pIndex;
+                    destSelect.value = dIndex;
+                    calculateFare();
+                }
+            } else if (urlParams.get('autoLocate') === 'true') {
+                openSheet();
+                if (navigator.geolocation) {
+                    document.getElementById('pickupInput').value = "Locating you...";
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            findNearestStop(lat, lng, 'pickup', "Your Current Location");
+                        },
+                        (error) => {
+                            document.getElementById('pickupInput').value = "";
+                            document.getElementById('pickupMsg').innerText = "Could not detect location.";
+                        }
+                    );
+                }
+            }
+        }
+
+        function closeRushBanner() { document.getElementById('rushHourBanner').classList.remove('show'); }
+        function checkRushHour() {
+            const h = new Date().getHours();
+            if ((h >= 7 && h < 9) || (h >= 16 && h < 20)) setTimeout(() => document.getElementById('rushHourBanner').classList.add('show'), 1000);
+        }
+
+        fetchBusStops();
+        checkRushHour();
+        // Start locating user in background to show marker
+        locateUser();
     </script>
 </body>
 </html>

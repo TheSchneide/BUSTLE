@@ -203,7 +203,8 @@ if ($isLoggedIn && !$isAdmin) {
         <?php if($isLoggedIn): ?>
           
           <?php if(!$isAdmin): ?>
-            <a href="Tracker.php" class="tracker">Fare Calculator</a>
+            <!-- REVERTED NAME TO TRACKER -->
+            <a href="Tracker.php" class="tracker">Tracker</a>
           <?php endif; ?>
 
           <!-- UPDATED DROPDOWN -->
@@ -220,7 +221,7 @@ if ($isLoggedIn && !$isAdmin) {
           </div>
 
         <?php else: ?>
-          <a href="login.html" class="tracker">Fare Calculator</a>
+          <a href="login.html" class="tracker">Tracker</a>
           <a href="login.html">Login</a>
           <a href="Register.html" class="SignUp">Sign Up</a>
         <?php endif; ?>
@@ -268,7 +269,6 @@ if ($isLoggedIn && !$isAdmin) {
           <?php endif; ?>
         </div>
         <?php else: ?>
-            <!-- ADMIN DASHBOARD HINT -->
             <div class="info">
                 <div class="info-text" style="text-align:center;">
                     <h1>Admin Dashboard</h1>
