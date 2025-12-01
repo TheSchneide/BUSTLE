@@ -22,7 +22,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bustle - Calculator</title>
+    <title>Bustle - Tracker</title>
     <link rel="stylesheet" href="index.css"> <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -60,7 +60,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <a href="Tracker.php" class="tracker">Calculator</a>
+                <a href="Tracker.php" class="tracker">Tracker</a>
                 
                 <div class="dropdown">
                     <button class="dropbtn">
@@ -186,6 +186,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
 
         let stops = [];
+        let stopMarkers = []; // Array to store marker objects
         const pickupSelect = document.getElementById('pickupSelect');
         const destSelect = document.getElementById('destSelect');
         const pickupInput = document.getElementById('pickupInput');
@@ -234,6 +235,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
                 const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
+                marker.stopId = stop.id; // Attach ID to marker for easy lookup
                 marker.on('click', function(e) {
                     if (pickingMode) {
                         showStopConfirmation(index);
@@ -242,6 +244,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                         this.bindPopup(`<b>${stop.name}</b>`).openPopup();
                     }
                 });
+                stopMarkers.push(marker); // Store in array
             });
         }
 
@@ -365,6 +368,15 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             return Math.round(fare);
         }
 
+        // Helper to reset marker visibility
+        function resetMarkerVisibility() {
+            stopMarkers.forEach(marker => {
+                if (!map.hasLayer(marker)) {
+                    marker.addTo(map);
+                }
+            });
+        }
+
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
@@ -411,9 +423,31 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const dIDVal = parseInt(stops[dIndex].id);
             let customRoute = false;
 
+            // Scenario Special: Pickup 24-31, Dest 52 or <= 18
+            if (pIDVal >= 24 && pIDVal <= 31 && (dIDVal == 52 || dIDVal <= 18)) {
+                // 1. Pickup -> 24 (Descending)
+                const part1 = stops.filter(s => {
+                    const sid = parseInt(s.id);
+                    return sid <= pIDVal && sid >= 24;
+                }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+
+                // 2. Stop 52
+                const part2 = stops.filter(s => parseInt(s.id) == 52);
+
+                let part3 = [];
+                // 3. 18 -> Destination (Descending), only if dest <= 18
+                if (dIDVal <= 18) {
+                    part3 = stops.filter(s => {
+                        const sid = parseInt(s.id);
+                        return sid <= 18 && sid >= dIDVal;
+                    }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                }
+
+                routeStops = part1.concat(part2).concat(part3);
+                customRoute = true;
+            }
             // Scenario 1: Pickup 2-31 (Changed from 1-31), Descending (Dest < Pickup)
-            // "if the user will input a pick up point of id number that starts at 31 down to id number 2"
-            if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
+            else if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
                 // Descending ID order strictly
                 routeStops = stops.filter(s => {
                     const sid = parseInt(s.id);
@@ -421,9 +455,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 customRoute = true;
             }
-            
             // Scenario 2: Pickup 1 OR >= 32
-            // "That if its pick up point if from id number 1, it starts from id number 32"
             else if (pIDVal == 1 || pIDVal >= 32) {
                 
                 // Sub-scenario: Destination 24-31 (Loop via 49)
@@ -488,6 +520,23 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
             }
             // --- UPDATED ROUTING LOGIC END ---
+
+            // --- HIDE LOGIC FOR 49/52 (UPDATED) ---
+            // Reset marker visibility first
+            resetMarkerVisibility();
+            
+            // Rule: "if i start picking from 31 to 24, the 49 automatically hides"
+            // Rule: "if its from 1 or 32 above, it automatically hides 52"
+            
+            if (pIDVal >= 24 && pIDVal <= 31) {
+                // Hide ID 49
+                const marker49 = stopMarkers.find(m => m.stopId == 49);
+                if (marker49) map.removeLayer(marker49);
+            } else if (pIDVal == 1 || pIDVal >= 32) {
+                // Hide ID 52
+                const marker52 = stopMarkers.find(m => m.stopId == 52);
+                if (marker52) map.removeLayer(marker52);
+            }
 
             const coordsString = routeStops.map(s => `${s.lng},${s.lat}`).join(';');
             const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=full&geometries=geojson`;

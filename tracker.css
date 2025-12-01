@@ -165,6 +165,35 @@ header {
     gap: 8px;
     padding: 10px;
   }
+
+  /* --- SWAP BUTTON MOBILE TWEAKS --- */
+  .swap-container {
+    justify-content: flex-end; /* Move to right side */
+    padding-right: 15px; /* Add spacing from edge */
+    margin-top: -30px !important; /* Pull it up tighter to input */
+    margin-bottom: -15px !important; 
+    z-index: 100 !important; /* Ensure it is above inputs */
+    position: relative; 
+    left: 33%;
+  }
+
+  .swap-btn {
+    width: 45px; /* Slightly larger target */
+    height: 45px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Stronger shadow for depth */
+    -webkit-tap-highlight-color: transparent; /* Remove blue overlay on tap */
+  }
+
+  .swap-btn:active {
+    animation: spin 0.4s linear infinite; /* Faster spin */
+    background-color: #FF9A00; /* Active color feedback */
+    color: white; /* Icon turns white */
+  }
+  
+  .swap-btn:active .swap-icon {
+      color: white;
+  }
 }
 
 .pageWrap {
@@ -781,6 +810,12 @@ footer a {
   font-size: 18px;
   color: #FF9A00;
   font-weight: bold;
+}
+
+/* --- ADDED SPIN ANIMATION KEYFRAMES --- */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .rush-hour-banner {
