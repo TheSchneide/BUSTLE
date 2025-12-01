@@ -98,7 +98,7 @@ if ($isAdmin) {
       <div id="navBar">
         <a href="index.php" class="Home">Home</a>
         <?php if(!$isAdmin): ?>
-            <a href="Tracker.php">Fare Calculator</a>
+            <a href="Tracker.php" class="tracker">Tracker</a>
         <?php endif; ?>
         
         <!-- NEW DROPDOWN -->
