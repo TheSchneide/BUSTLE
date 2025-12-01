@@ -37,5 +37,14 @@ class BusStop {
         $stmt->bind_param("sddi", $name, $lat, $lng, $id);
         return $stmt->execute();
     }
+
+    // --- NEW: Delete Function ---
+    public function deleteStop($id) {
+        // Note: This might fail if this stop is referenced in trips or saved_routes 
+        // and your database doesn't have ON DELETE CASCADE set up.
+        $stmt = $this->conn->prepare("DELETE FROM bus_stops WHERE stop_id = ?");
+        $stmt->bind_param("i", $id);
+        return $stmt->execute();
+    }
 }
 ?>

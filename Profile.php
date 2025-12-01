@@ -60,6 +60,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = "error";
         }
     }
+
+    // 4. ADMIN: DELETE STOP (NEW)
+    if (isset($_POST['delete_stop']) && $isAdmin) {
+        $stopObj = new BusStop($conn);
+        if ($stopObj->deleteStop($_POST['stop_id'])) {
+            $message = "Bus stop deleted successfully!";
+            $messageType = "success";
+        } else {
+            $message = "Failed to delete stop. It might be in use by saved routes or history.";
+            $messageType = "error";
+        }
+    }
 }
 
 // --- FETCH DATA ---
@@ -85,6 +97,8 @@ if ($isAdmin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - Bustle</title>
     <link rel="stylesheet" href="index.css">
+    <!-- LINKED NEW ANIMATION CSS -->
+    <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
@@ -120,14 +134,14 @@ if ($isAdmin) {
 <div class="profile-container">
     
     <?php if(!empty($message)): ?>
-        <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align:center; color: white; background: <?php echo $messageType == 'success' ? '#4CAF50' : '#f44336'; ?>;">
+        <div class="anim-enter pop-in" style="padding: 15px; margin-bottom: 20px; border-radius: 8px; text-align:center; color: white; background: <?php echo $messageType == 'success' ? '#4CAF50' : '#f44336'; ?>;">
             <?php echo htmlspecialchars($message); ?>
         </div>
     <?php endif; ?>
 
     <!-- ================= ADMIN VIEW ================= -->
     <?php if($isAdmin): ?>
-        <div class="profile-card">
+        <div class="profile-card anim-enter slide-up delay-1">
             <div class="profile-header">
                 <div class="profile-avatar" style="background:#4F200D;">A</div>
                 <div class="profile-details">
@@ -173,9 +187,12 @@ if ($isAdmin) {
                                     <td><input type="text" name="stop_name" value="<?php echo htmlspecialchars($stop['stop_name']); ?>"></td>
                                     <td><input type="text" name="latitude" value="<?php echo $stop['latitude']; ?>" size="8"></td>
                                     <td><input type="text" name="longitude" value="<?php echo $stop['longitude']; ?>" size="8"></td>
-                                    <td>
+                                    <td style="display:flex; gap:5px;">
                                         <input type="hidden" name="stop_id" value="<?php echo $stop['stop_id']; ?>">
                                         <button type="submit" name="edit_stop" style="background:none; border:none; color:blue; cursor:pointer;">Update</button>
+                                        
+                                        <!-- DELETE BUTTON ADDED HERE -->
+                                        <button type="submit" name="delete_stop" style="background:none; border:none; color:red; cursor:pointer;" onclick="return confirm('Are you sure you want to delete this stop?');">Delete</button>
                                     </td>
                                 </form>
                             </tr>
@@ -215,7 +232,7 @@ if ($isAdmin) {
     <?php else: ?>
         
         <!-- INFO CARD -->
-        <div class="profile-card">
+        <div class="profile-card anim-enter slide-up delay-1">
             <div class="profile-header">
                 <div class="profile-avatar">
                     <?php echo strtoupper(substr($_SESSION['username'], 0, 1)); ?>
@@ -230,7 +247,7 @@ if ($isAdmin) {
         </div>
 
         <!-- RECENT TRIP -->
-        <div class="profile-card">
+        <div class="profile-card anim-enter slide-up delay-2">
             <h3><i class="fa-solid fa-clock-rotate-left"></i> Recently Viewed Trip</h3>
             <?php if($recent_trip): ?>
                 <div style="background:#FFF8E1; padding:20px; border-radius:10px; border-left: 5px solid #FF9A00;">
@@ -244,7 +261,7 @@ if ($isAdmin) {
         </div>
 
         <!-- UPDATE SETTINGS -->
-        <div class="profile-card">
+        <div class="profile-card anim-enter slide-up delay-3">
             <h3>Update Profile</h3>
             <p style="font-size:0.9rem; color:#666; margin-bottom:20px;">Confirm your email and current password to make changes.</p>
             
