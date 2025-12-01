@@ -309,6 +309,18 @@ if ($isAdmin) {
         document.getElementById(tabName).classList.add("active");
         event.currentTarget.classList.add("active");
     }
+
+    document.addEventListener('click', (e) => {
+            const dropBtn = e.target.closest('.dropbtn');
+            const dropContent = e.target.closest('.dropdown-content');
+            if (dropBtn) {
+                const dropdown = dropBtn.closest('.dropdown');
+                dropdown.classList.toggle('active');
+                e.stopPropagation();
+            } else if (!dropContent) {
+                document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
 </script>
 
 </body>

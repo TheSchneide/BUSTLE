@@ -159,6 +159,20 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     </div>
 
     <script>
+
+        // --- DROPDOWN LOGIC FOR TRACKER ---
+        document.addEventListener('click', (e) => {
+            const dropBtn = e.target.closest('.dropbtn');
+            const dropContent = e.target.closest('.dropdown-content');
+            if (dropBtn) {
+                const dropdown = dropBtn.closest('.dropdown');
+                dropdown.classList.toggle('active');
+                e.stopPropagation();
+            } else if (!dropContent) {
+                document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
+            }
+        });
+
         // --- CONFIGURATION ---
         const STUDENT_BASE_FARE = 13.00;
         const STUDENT_BASE_DIST = 7.4;
