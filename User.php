@@ -6,48 +6,29 @@ class User {
         $this->conn = $db_connection;
     }
 
-
-    public function register($username, $email, $password) {
-        $response = ['status' => '', 'message' => ''];
-        
+    public function register($username, $email, $password, $birthdate) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        $checkEmail = $this->conn->prepare("SELECT * FROM users WHERE email = ?");
-        $checkEmail->bind_param("s", $email);
-        $checkEmail->execute();
-        $emailResult = $checkEmail->get_result();
-
-        $checkUsername = $this->conn->prepare("SELECT * FROM users WHERE username = ?");
-        $checkUsername->bind_param("s", $username);
-        $checkUsername->execute();
-        $userResult = $checkUsername->get_result();
-
-        if ($emailResult->num_rows > 0) {
-            $response['status'] = 'error';
-            $response['message'] = 'Email already registered!';
-        } elseif ($userResult->num_rows > 0) {
-            $response['status'] = 'error';
-            $response['message'] = 'Username already taken!';
-        } else {
-            $stmt = $this->conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $username, $email, $hashed_password);
-            
-            if ($stmt->execute()) {
-                $response['status'] = 'success';
-                $response['message'] = 'Registration successful!';
-            } else {
-                $response['status'] = 'error';
-                $response['message'] = 'Registration failed. Try again.';
-            }
+        // Check duplicates
+        $check = $this->conn->prepare("SELECT * FROM users WHERE email = ? OR username = ?");
+        $check->bind_param("ss", $email, $username);
+        $check->execute();
+        if ($check->get_result()->num_rows > 0) {
+            return ['status' => 'error', 'message' => 'Username or Email already exists.'];
         }
-        
-        return $response;
-    }
 
+        $stmt = $this->conn->prepare("INSERT INTO users (username, email, password, birthdate) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("ssss", $username, $email, $hashed_password, $birthdate);
+        
+        if ($stmt->execute()) {
+            return ['status' => 'success', 'message' => 'Registration successful!'];
+        } else {
+            return ['status' => 'error', 'message' => 'Registration failed.'];
+        }
+    }
 
     public function login($username, $password) {
         $response = ['status' => 'error', 'message' => 'Login failed.'];
-
         $stmt = $this->conn->prepare("SELECT * FROM users WHERE username = ?");
         $stmt->bind_param("s", $username);
         $stmt->execute();
@@ -65,8 +46,49 @@ class User {
         } else {
             $response['message'] = 'User not found!';
         }
-        
         return $response;
+    }
+
+    // --- NEW: For Profile Update ---
+    public function updateProfile($userId, $confirmEmail, $confirmPass, $newUsername, $newPassword = null) {
+        // 1. Verify Identity
+        $stmt = $this->conn->prepare("SELECT password, email FROM users WHERE user_id = ?");
+        $stmt->bind_param("i", $userId);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $currentUser = $res->fetch_assoc();
+
+        if (!$currentUser || $currentUser['email'] !== $confirmEmail || !password_verify($confirmPass, $currentUser['password'])) {
+            return ['status' => 'error', 'message' => 'Verification failed. Incorrect Email or Password.'];
+        }
+
+        // 2. Update Data
+        if (!empty($newPassword)) {
+            // Update Username AND Password
+            $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+            $update = $this->conn->prepare("UPDATE users SET username = ?, password = ? WHERE user_id = ?");
+            $update->bind_param("ssi", $newUsername, $newHash, $userId);
+        } else {
+            // Update Username ONLY
+            $update = $this->conn->prepare("UPDATE users SET username = ? WHERE user_id = ?");
+            $update->bind_param("si", $newUsername, $userId);
+        }
+
+        if ($update->execute()) {
+            return ['status' => 'success', 'message' => 'Profile updated successfully.'];
+        } else {
+            return ['status' => 'error', 'message' => 'Update failed. Username might be taken.'];
+        }
+    }
+
+    // --- NEW: For Admin View ---
+    public function getAllUsers() {
+        $result = $this->conn->query("SELECT user_id, username, email, birthdate FROM users");
+        $users = [];
+        while ($row = $result->fetch_assoc()) {
+            $users[] = $row;
+        }
+        return $users;
     }
 }
 ?>

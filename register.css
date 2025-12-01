@@ -347,6 +347,30 @@ form {
     opacity: 1;
 }
 
+/* ========== IOS FIXES FOR DATE INPUT ========== */
+input[type="date"] {
+    -webkit-appearance: none;  /* Removes native iOS styling */
+    appearance: none;
+    display: block;
+    
+    /* Enforce matching styles */
+    background-color: #eee;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    
+    /* Font & Text */
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+    
+    /* Sizing - Matches .inputBox input */
+    width: 100%;
+    padding: 13px 50px 13px 20px; /* Right padding 50px avoids text hitting the icon */
+    min-height: 45px; /* Ensures decent tap target size */
+}
+
 /* ========== MOBILE FIXES ========== */
 @media (max-width: 768px) {
     /* Container adapts to mobile */
@@ -396,13 +420,13 @@ form {
 
     /* Login button matches register button */
     .toggle-panel .btn {
-        width: 90% !important;
+        width: 100% !important;
         max-width: 250px !important;
         background-color: #FF9A00 !important; /* same as register button */
         color: #fff !important;               /* white text */
         text-align: center !important;
         border: none !important;
-        margin: 0 auto !important;            /* center horizontally */
+        margin: 30 auto !important;            /* center horizontally */
     }
 
     .toggle-panel .btn:hover {
@@ -417,4 +441,3 @@ form {
         text-align: center !important;
     }
 }
-
