@@ -23,8 +23,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bustle - Tracker</title>
-    <link rel="stylesheet" href="index.css"> <!-- Navbar Styles -->
-    <link rel="stylesheet" href="tracker.css">
+    <link rel="stylesheet" href="index.css"> <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="icon" type="image/x-icon" href="busFavicon.png">
@@ -32,7 +31,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 </head>
 
 <body>
-    <!-- RUSH HOUR BANNER -->
     <div id="rushHourBanner" class="rush-hour-banner">
         <div style="font-size: 24px;">⚠️</div>
         <div class="rush-content">
@@ -42,7 +40,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         <button class="rush-close" onclick="closeRushBanner()">✕</button>
     </div>
 
-    <!-- MAP TIP MODAL -->
     <div id="mapTip" class="map-tip-overlay">
         <div class="map-tip-icon">👆</div>
         <h3 style="margin:0 0 10px 0; color:#4F200D;">Tap a Bus Stop</h3>
@@ -52,7 +49,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         <button class="map-tip-btn" onclick="closeMapTip()">Got it!</button>
     </div>
 
-    <!-- NEW: RECENTER BUTTON -->
     <button id="recenterBtn" class="recenter-btn" onclick="recenterMap()" title="Locate Me">
         <i class="fa-solid fa-location-crosshairs"></i>
     </button>
@@ -64,7 +60,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <!-- Renamed back to Tracker as requested -->
                 <a href="Tracker.php" class="tracker">Tracker</a>
                 
                 <div class="dropdown">
@@ -97,7 +92,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 <div class="header-row">
                     <div>
                         <label class="input-label" style="display:inline;">Pick-up Point</label>
-                        <!-- ADDED ID HERE FOR HIGHLIGHT -->
                         <button id="pickupMapBtn" class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Map</button>
                     </div>
                     <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
@@ -153,7 +147,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         </div>
     </div>
 
-    <!-- Map Confirmation Modal -->
     <div id="mapConfirmOverlay" class="confirm-overlay">
         <div class="confirm-modal">
             <h3>Confirm Stop</h3>
@@ -427,7 +420,20 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                             </div>
                         </div>
                     `;
-                    currentRouteLayer = L.geoJSON(route.geometry, { style: { color: 'blue', weight: 4, opacity: 0.7 } }).addTo(map);
+
+                    // --- TRAFFIC COLOR LOGIC (UPDATED) ---
+                    const date = new Date();
+                    const hour = date.getHours(); 
+                    let routeColor = 'blue'; // Default to Normal (Blue)
+
+                    if ((hour >= 7 && hour < 9) || (hour >= 16 && hour < 20)) {
+                        routeColor = 'red'; // Heavy Traffic (7-9 AM, 4-8 PM)
+                    } else if (hour >= 20 || hour < 7) { 
+                        // CHANGED: GREEN Starts at 8 PM (20) instead of 10 PM
+                        routeColor = 'green'; // Smooth Traffic (8 PM - 7 AM)
+                    }
+
+                    currentRouteLayer = L.geoJSON(route.geometry, { style: { color: routeColor, weight: 4, opacity: 0.7 } }).addTo(map);
                     map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
                     saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
                 }
@@ -647,6 +653,18 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function checkRushHour() {
             const h = new Date().getHours();
             if ((h >= 7 && h < 9) || (h >= 16 && h < 20)) setTimeout(() => document.getElementById('rushHourBanner').classList.add('show'), 1000);
+        }
+
+        function copyToClipboard(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = "Copied!";
+                btnElement.classList.add('copied');
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.classList.remove('copied');
+                }, 2000);
+            }).catch(err => { console.error('Failed to copy: ', err); });
         }
 
         fetchBusStops();
