@@ -22,7 +22,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bustle - Tracker</title>
+    <title>Bustle - Calculator</title>
     <link rel="stylesheet" href="index.css"> <link rel="stylesheet" href="tracker.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
@@ -60,7 +60,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <a href="Tracker.php" class="tracker">Tracker</a>
+                <a href="Tracker.php" class="tracker">Calculator</a>
                 
                 <div class="dropdown">
                     <button class="dropbtn">

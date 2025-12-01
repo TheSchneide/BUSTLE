@@ -204,7 +204,7 @@ if ($isLoggedIn && !$isAdmin) {
           
           <?php if(!$isAdmin): ?>
             <!-- REVERTED NAME TO TRACKER -->
-            <a href="Tracker.php" class="tracker">Tracker</a>
+            <a href="Tracker.php" class="tracker">Calculator</a>
           <?php endif; ?>
 
           <!-- UPDATED DROPDOWN -->
@@ -221,7 +221,7 @@ if ($isLoggedIn && !$isAdmin) {
           </div>
 
         <?php else: ?>
-          <a href="login.html" class="tracker">Tracker</a>
+          <a href="login.html" class="tracker">Calculator</a>
           <a href="login.html">Login</a>
           <a href="Register.html" class="SignUp">Sign Up</a>
         <?php endif; ?>
@@ -278,16 +278,16 @@ if ($isLoggedIn && !$isAdmin) {
         <?php endif; ?>
 
       <?php else: ?>
-        <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
-        <p class="hidden-text" data-anim="fade-up">“Real-time rides, real-time ease.”</p>
+        <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Budgetting Solution</h1>
+        <p class="hidden-text" data-anim="fade-up">“Plan Your Trip. Perfect Your Budget”</p>
         <img src="bustle.png" id="bustleImg" class="hidden-text" data-anim="fade-up">
         <section class="info">
           <div class="info-text">
-            <h1 class="hidden-text" data-anim="fade-left">Longer waiting time?</h1>
-            <h2 class="hidden-text" data-anim="fade-left">no longer a problem for <span class="highlight">Bustle!</span></h2>
+            <h1 class="hidden-text" data-anim="fade-left">Don't know how to budget?</h1>
+            <h2 class="hidden-text" data-anim="fade-left">Save time and money with <span class="highlight">Bustle!</span></h2>
             <p class="hidden-text" data-anim="fade-left"> 
-              Bustle takes the guesswork out of commuting. Instead of wasting time waiting or
-              running around looking for buses, students can track arrivals in real time.
+              Our easy-to-use tool quickly calculates the exact fare for any bus route. 
+              Know your budget, plan your journey, and ride with confidence.
             </p>
           </div>
           <div class="info-img">
@@ -299,8 +299,13 @@ if ($isLoggedIn && !$isAdmin) {
           <div class="about">
             <h1 class="hidden-text" data-anim="fade-up">Who are we?</h1>
             <h2 class="hidden-text" data-anim="fade-up">Bustle</h2>
-            <p class="hidden-text" data-anim="fade-up">shows where the bus is, when it will reach the stop, and how long the ride will 
-            take—saving time, reducing stress, and making sure you never miss class again</p>
+            <p class="hidden-text" data-anim="fade-up">
+              Stop guessing your bus fare and start calculating! 
+              Bustle provides a fast solution for your daily commute. 
+              Enter your route and receive an accurate and precise fare estimate instantly. 
+              With just a click of a button, all your budgeting problems are easily solved, 
+              letting you ride with complete confidence.
+            </p>
           </div>
         </section>
       <?php endif; ?>

@@ -148,6 +148,13 @@ hr {
   border-radius: 5rem;
   padding: 0.5rem 1.2rem;
   font-weight: bolder;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tracker:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 /* --- DROPDOWN STYLES (UPDATED) --- */
@@ -158,7 +165,7 @@ hr {
 
 .dropbtn {
     background-color: white;
-    color: #4F200D;
+    color: black;
     padding: 0.5rem 1.2rem;
     font-size: 18px;
     border: 2px solid #FF9A00;
@@ -168,11 +175,16 @@ hr {
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .dropbtn:hover {
-    background-color: #FF9A00;
+    background-color: #4F200D;
     color: white;
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+
 }
 
 .dropdown-content {
@@ -200,6 +212,8 @@ hr {
 .dropdown-content a:hover {
     background-color: #FF9A00;
     color: white;
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Show dropdown when active class is added via JS */
@@ -280,8 +294,13 @@ hr {
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
-.action-btn:hover { background: #333; }
+.action-btn:hover { 
+  background: #333; 
+  transform: translateY(-2px); 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
 
 /* Admin Tabs */
 .tab-nav {
@@ -296,6 +315,7 @@ hr {
     border-radius: 20px;
     cursor: pointer;
     font-weight: bold;
+    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .tab-btn.active {
     background: #FF9A00;
@@ -512,7 +532,8 @@ hr {
     border: 2px solid #e08900;
 }
 .savedRouteBtn:hover {
-    transform: scale(1.02);
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     background-color: #ff8c00;
 }
 .savedRouteBtn h3 { margin: 0; font-family: Caprasimo; font-size: 1.5rem; }
@@ -663,5 +684,7 @@ footer a {
   .dropdown-content a:hover {
       background: #f0f0f0;
       color: #4F200D;
+      transform: translateY(-2px); 
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 }
