@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 4. ADMIN: DELETE STOP (NEW)
+    // 4. ADMIN: DELETE STOP
     if (isset($_POST['delete_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         if ($stopObj->deleteStop($_POST['stop_id'])) {
@@ -97,13 +97,12 @@ if ($isAdmin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - Bustle</title>
     <link rel="stylesheet" href="index.css">
-    <!-- LINKED NEW ANIMATION CSS -->
     <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
 
-<!-- NAVBAR (Reused & Updated) -->
+<!-- NAVBAR -->
 <header>
     <div class="Navigation">
       <div id="logo">
@@ -115,7 +114,6 @@ if ($isAdmin) {
             <a href="Tracker.php" class="tracker">Tracker</a>
         <?php endif; ?>
         
-        <!-- NEW DROPDOWN -->
         <div class="dropdown">
             <button class="dropbtn">
                 <i class="fa-solid fa-user"></i> 
@@ -187,12 +185,12 @@ if ($isAdmin) {
                                     <td><input type="text" name="stop_name" value="<?php echo htmlspecialchars($stop['stop_name']); ?>"></td>
                                     <td><input type="text" name="latitude" value="<?php echo $stop['latitude']; ?>" size="8"></td>
                                     <td><input type="text" name="longitude" value="<?php echo $stop['longitude']; ?>" size="8"></td>
-                                    <td style="display:flex; gap:5px;">
+                                    
+                                    <!-- FIXED ALIGNMENT: Removed flex, added margins and vertical-align -->
+                                    <td>
                                         <input type="hidden" name="stop_id" value="<?php echo $stop['stop_id']; ?>">
-                                        <button type="submit" name="edit_stop" style="background:none; border:none; color:blue; cursor:pointer;">Update</button>
-                                        
-                                        <!-- DELETE BUTTON ADDED HERE -->
-                                        <button type="submit" name="delete_stop" style="background:none; border:none; color:red; cursor:pointer;" onclick="return confirm('Are you sure you want to delete this stop?');">Delete</button>
+                                        <button type="submit" name="edit_stop" style="background:none; border:none; color:blue; cursor:pointer; margin-right: 10px; vertical-align: middle;">Update</button>
+                                        <button type="submit" name="delete_stop" style="background:none; border:none; color:red; cursor:pointer; vertical-align: middle;" onclick="return confirm('Are you sure you want to delete this stop?');">Delete</button>
                                     </td>
                                 </form>
                             </tr>
@@ -311,16 +309,16 @@ if ($isAdmin) {
     }
 
     document.addEventListener('click', (e) => {
-            const dropBtn = e.target.closest('.dropbtn');
-            const dropContent = e.target.closest('.dropdown-content');
-            if (dropBtn) {
-                const dropdown = dropBtn.closest('.dropdown');
-                dropdown.classList.toggle('active');
-                e.stopPropagation();
-            } else if (!dropContent) {
-                document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
-            }
-        });
+        const dropBtn = e.target.closest('.dropbtn');
+        const dropContent = e.target.closest('.dropdown-content');
+        if (dropBtn) {
+            const dropdown = dropBtn.closest('.dropdown');
+            dropdown.classList.toggle('active');
+            e.stopPropagation();
+        } else if (!dropContent) {
+            document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
+        }
+    });
 </script>
 
 </body>
