@@ -2,23 +2,20 @@
 session_start();
 include 'Database.php';
 include 'Trip.php'; 
-include 'SavedRoute.php'; // 1. Include the new Class
+include 'SavedRoute.php'; 
 
 $isLoggedIn = isset($_SESSION['user_id']);
 $username = $isLoggedIn ? $_SESSION['username'] : '';
+$isAdmin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 
 $recent_trip = null;
 $saved_route = null;
 
-if ($isLoggedIn) {
+if ($isLoggedIn && !$isAdmin) {
     $db = new Database();
-    $conn = $db->getConnection(); // Get connection to pass around
-
-    // 2. Use Trip Class
+    $conn = $db->getConnection(); 
     $trip = new Trip($conn);
     $recent_trip = $trip->getMostRecent($_SESSION['user_id']);
-
-    // 3. Use SavedRoute Class
     $savedRouteObj = new SavedRoute($conn);
     $all_saved_routes = $savedRouteObj->getAll($_SESSION['user_id']);
 }
@@ -31,6 +28,7 @@ if ($isLoggedIn) {
   <title>Bustle</title>
   <link rel="stylesheet" href="index.css">
   <link rel="icon" type="image/x-icon" href="busFavicon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="index.js" defer></script>
 
   <style>
@@ -72,7 +70,6 @@ if ($isLoggedIn) {
       transform: rotate(-45deg) translate(4px, -4px);
     }
     
-    /* Current Bus / Location Box Styles */
     .currentBus {
       background-color: #fefefe;
       margin: 30px auto;
@@ -82,8 +79,6 @@ if ($isLoggedIn) {
       width: 80%;
       text-align: left;
       box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-      
-      /* Interactive Styles */
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
@@ -94,9 +89,8 @@ if ($isLoggedIn) {
       border-color: #FF9A00;
     }
 
-    /* Saved Route Card Style */
     .savedRouteBtn {
-        background-color: #FF9A00; /* Orange to make it distinct */
+        background-color: #FF9A00; 
         color: white;
         margin: 20px auto;
         padding: 30px;
@@ -207,10 +201,26 @@ if ($isLoggedIn) {
         <a href="#index.php" class="Home">Home</a>
 
         <?php if($isLoggedIn): ?>
-          <a href="Tracker.php" class="tracker">Tracker</a>
-          <a href="logout.php">Logout</a>
+          
+          <?php if(!$isAdmin): ?>
+            <a href="Tracker.php" class="tracker">Fare Calculator</a>
+          <?php endif; ?>
+
+          <!-- UPDATED DROPDOWN -->
+          <div class="dropdown">
+            <button class="dropbtn">
+                <i class="fa-solid fa-user"></i> 
+                <?php echo htmlspecialchars($username); ?> 
+                <i class="fa-solid fa-caret-down"></i>
+            </button>
+            <div class="dropdown-content">
+                <a href="Profile.php">Profile</a>
+                <a href="logout.php">Logout</a>
+            </div>
+          </div>
+
         <?php else: ?>
-          <a href="login.html" class="tracker">Tracker</a>
+          <a href="login.html" class="tracker">Fare Calculator</a>
           <a href="login.html">Login</a>
           <a href="Register.html" class="SignUp">Sign Up</a>
         <?php endif; ?>
@@ -222,6 +232,7 @@ if ($isLoggedIn) {
       <?php if($isLoggedIn): ?>
         <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span></h2>
         
+        <?php if(!$isAdmin): ?>
         <div class="bussin">
           <div class="busInfo">
               <h2>Recently Viewed</h2>
@@ -256,6 +267,15 @@ if ($isLoggedIn) {
             </div>
           <?php endif; ?>
         </div>
+        <?php else: ?>
+            <!-- ADMIN DASHBOARD HINT -->
+            <div class="info">
+                <div class="info-text" style="text-align:center;">
+                    <h1>Admin Dashboard</h1>
+                    <p>Go to your <a href="Profile.php" style="color:#FF9A00; font-weight:bold;">Profile</a> to manage Stops and Users.</p>
+                </div>
+            </div>
+        <?php endif; ?>
 
       <?php else: ?>
         <h1 class="hidden-text" data-anim="fade-up">Your <span class="highlight">No.1</span> Tracking Solution</h1>
@@ -299,6 +319,13 @@ if ($isLoggedIn) {
     toggle.addEventListener('click', () => {
       toggle.classList.toggle('active');
       navBar.classList.toggle('active');
+    });
+
+    // Mobile Dropdown Toggle
+    document.querySelectorAll('.dropdown').forEach(d => {
+        d.addEventListener('click', () => {
+            d.classList.toggle('active');
+        });
     });
 
     document.addEventListener("DOMContentLoaded", () => {

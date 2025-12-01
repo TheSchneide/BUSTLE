@@ -26,7 +26,9 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Bustle - Fare Calculator</title>
+    <link rel="stylesheet" href="index.css"> <!-- Import Index CSS for Navbar Styles -->
     <link rel="stylesheet" href="tracker.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="icon" type="image/x-icon" href="busFavicon.png">
@@ -240,6 +242,11 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             cursor: pointer;
             margin-top: 15px;
         }
+        
+        /* FIX: Ensure dropdown is visible on top of map */
+        .dropdown-content {
+            background: white;
+        }
     </style>
 </head>
 
@@ -271,7 +278,20 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             </div>
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <a href="logout.php" class="tracker">Logout</a>
+                <a href="Tracker.php" class="tracker">Fare Calculator</a>
+                
+                <!-- NEW NAVBAR DROPDOWN -->
+                <div class="dropdown">
+                    <button class="dropbtn">
+                        <i class="fa-solid fa-user"></i> 
+                        <?php echo htmlspecialchars($_SESSION['username']); ?> 
+                        <i class="fa-solid fa-caret-down"></i>
+                    </button>
+                    <div class="dropdown-content">
+                        <a href="Profile.php">Profile</a>
+                        <a href="logout.php">Logout</a>
+                    </div>
+                </div>
             </div>
         </div>
         <div id="map"></div>
@@ -999,6 +1019,13 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         sheetHeader.addEventListener('click', () => {
             if (bottomSheet.classList.contains('expanded')) closeSheet();
             else openSheet();
+        });
+
+        // Mobile Dropdown Toggle
+        document.querySelectorAll('.dropdown').forEach(d => {
+            d.addEventListener('click', () => {
+                d.classList.toggle('active');
+            });
         });
 
         sheetOverlay.addEventListener('click', closeSheet);
