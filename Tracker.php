@@ -452,23 +452,40 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
         }
 
-        function computeFareValue(distKm, startName, endName) {
+        function computeFareValue(distKm, startName, endName, pId, dId) {
             const isStudent = IS_DISCOUNTED;
             let billableDistance = distKm;
+            
+            // Logic for IT Park billable distance deduction
             if (startName === "IT Park" || endName === "IT Park") {
                 billableDistance = Math.max(0, distKm - 0.6); 
             }
+            
             let fare = 0;
+            
             if (isStudent) {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
-                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 41;
-                if ((startName === "IT Park" && endName === "Saac") || (startName === "Saac" && endName === "IT Park")) fare = 29;
+                
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
+                    fare = 41;
+                }
+                
+                if (parseInt(pId) === 27) {
+                    if (parseInt(dId) === 4 || parseInt(dId) === 5) {
+                        fare = 29;
+                    }
+                } 
+
             } else {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
-                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 51; 
+
+                if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) {
+                    fare = 51; 
+                }
             }
+            
             if (fare < 13.00) fare = 13.00;
             return Math.round(fare);
         }
@@ -532,7 +549,33 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const dIDVal = parseInt(stops[dIndex].id);
             let customRoute = false;
 
-            if (pIDVal >= 24 && pIDVal <= 31 && (dIDVal == 52 || dIDVal <= 18)) {
+            // --- 1. NEW: Logic for ID 49 (Only goes to 24-31) ---
+            if (pIDVal == 49) {
+                if (dIDVal >= 24 && dIDVal <= 31) {
+                    const stop49 = stops.filter(s => parseInt(s.id) == 49);
+                    // Get dests sorted 24 -> 31
+                    const dests = stops.filter(s => { const sid = parseInt(s.id); return sid >= 24 && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                    routeStops = stop49.concat(dests);
+                    customRoute = true;
+                }
+            }
+            // --- 2. NEW: Logic for ID 52 (Only goes to 18 down to 1) ---
+            else if (pIDVal == 52) {
+                if (dIDVal <= 18 && dIDVal >= 1) {
+                    const stop52 = stops.filter(s => parseInt(s.id) == 52);
+                    // Get dests sorted 18 -> 1 (Descending)
+                    const dests = stops.filter(s => { const sid = parseInt(s.id); return sid <= 18 && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                    routeStops = stop52.concat(dests);
+                    customRoute = true;
+                }
+            }
+            // --- 3. NEW: Logic for 18-30 going UP to 31 ---
+            else if (pIDVal >= 18 && pIDVal <= 30 && dIDVal > pIDVal && dIDVal <= 31) {
+                 routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid >= pIDVal && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                 customRoute = true;
+            }
+            // --- 4. Existing Logic for 24-31 going to 52 or 1-18 (Loop Back) ---
+            else if (pIDVal >= 24 && pIDVal <= 31 && (dIDVal == 52 || dIDVal <= 18)) {
                 const part1 = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= 24; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 const part2 = stops.filter(s => parseInt(s.id) == 52);
                 let part3 = [];
@@ -542,11 +585,15 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 routeStops = part1.concat(part2).concat(part3);
                 customRoute = true;
             }
+            // --- 5. Existing Logic for 2-31 going backwards ---
             else if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
                 routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 customRoute = true;
             }
+            // --- 6. Existing General Logic for the rest (Handle with care) ---
             else if (pIDVal == 1 || pIDVal >= 32) {
+                // Note: 49 and 52 are caught above, so they won't trigger this unless they failed the specific checks above
+                
                 if (dIDVal >= 24 && dIDVal <= 31) {
                     let part1 = [];
                     if (pIDVal == 1) {
@@ -578,8 +625,45 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
 
             if (!customRoute) {
-                if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); }
-                else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
+                // --- STRICT ROUTE VALIDATION UPDATED ---
+                // Block if:
+                // 1. Pickup is 2-31 (unless it was a valid custom route above)
+                // 2. Pickup is 1 AND Dropoff is 2-17
+                // 3. Pickup is 49 (If it failed the check above, it's invalid)
+                // 4. Pickup is 52 (If it failed the check above, it's invalid)
+                
+                if ((pIDVal >= 2 && pIDVal <= 31) || (pIDVal == 1 && dIDVal <= 17) || pIDVal == 49 || pIDVal == 52) {
+                    
+                    // Show Error UI
+                    sheetTitle.innerHTML = `<span style="color: #d32f2f; font-size: 1.2rem;">Invalid Route</span>`;
+                    
+                    resultDisplay.innerHTML = `
+                        <div class="fd-body" style="flex-direction: column; align-items: center; text-align: center;">
+                            <div style="color: #d32f2f; font-weight: bold; font-size: 3rem; margin-bottom: 10px;">
+                                <i class="fa-solid fa-ban"></i>
+                            </div>
+                            <div style="font-weight: bold; color: #4F200D; margin-bottom: 5px;">
+                                No Direct Route
+                            </div>
+                            <div style="font-size: 0.9rem; color: #666; max-width: 80%;">
+                                The bus does not travel directly between <strong>${stops[pIndex].name}</strong> and <strong>${stops[dIndex].name}</strong>.
+                            </div>
+                        </div>
+                    `;
+
+                    saveRouteBtn.disabled = true;
+                    saveRouteBtn.classList.remove('active');
+                    currentRouteLayers.forEach(layer => map.removeLayer(layer));
+                    currentRouteLayers = [];
+                    return;
+                }
+                
+                // Linear Fallback
+                if (pIndex < dIndex) { 
+                    routeStops = stops.slice(pIndex, dIndex + 1); 
+                } else { 
+                    routeStops = stops.slice(dIndex, pIndex + 1).reverse(); 
+                }
             }
 
             resetMarkerVisibility();
@@ -665,36 +749,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 
                 const timeInMinutes = Math.round((totalDistKm / 20) * 60);
                 let timeString = timeInMinutes >= 60 ? `${Math.floor(timeInMinutes / 60)} hr ${timeInMinutes % 60} min` : `${timeInMinutes} min`;
-                const finalFare = computeFareValue(totalDistKm, stops[pIndex].name, stops[dIndex].name);
-                if (finalFare > 41) {
-                    // 1. Show Error UI in the Bottom Sheet
-                    sheetTitle.innerHTML = `<span style="color: #d32f2f; font-size: 1.2rem;">Invalid Route</span>`;
-                    
-                    resultDisplay.innerHTML = `
-                        <div class="fd-body" style="flex-direction: column; align-items: center; text-align: center;">
-                            <div style="color: #d32f2f; font-weight: bold; font-size: 3rem; margin-bottom: 10px;">
-                                <i class="fa-solid fa-circle-exclamation"></i>
-                            </div>
-                            <div style="font-weight: bold; color: #4F200D; margin-bottom: 5px;">
-                                Route Unavailable
-                            </div>
-                            <div style="font-size: 0.9rem; color: #666; max-width: 80%;">
-                                The selected route exceeds the maximum fare limit (₱41). Please select a different drop-off point.
-                            </div>
-                        </div>
-                    `;
-
-                    // 2. Disable the "Save" button
-                    saveRouteBtn.disabled = true;
-                    saveRouteBtn.classList.remove('active');
-                    
-                    // 3. Remove the route lines from the map so it looks "cancelled"
-                    currentRouteLayers.forEach(layer => map.removeLayer(layer));
-                    currentRouteLayers = [];
-
-                    // 4. STOP HERE. Do not save trip history or show normal results.
-                    return;
-                }
+                const finalFare = computeFareValue(totalDistKm, stops[pIndex].name, stops[dIndex].name, stops[pIndex].id, stops[dIndex].id);
                 
                 sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
                 const shareText = `🚍 Bustle Trip: ${stops[pIndex].name} ➝ ${stops[dIndex].name} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
@@ -742,7 +797,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 const data = await response.json();
                 if (data.routes && data.routes.length > 0) {
                     const distKm = data.routes[0].distance / 1000;
-                    const maxFare = computeFareValue(distKm, pickupStop.name, destStop.name);
+                    const maxFare = computeFareValue(distKm, pickupStop.name, destStop.name, pickupStop.id, destStop.id);
                     const minFare = 13;
                     const rangeText = `₱ ${minFare} - ₱ ${maxFare}`;
                     sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">${rangeText}</span>`;
@@ -940,6 +995,42 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     btnElement.classList.remove('copied');
                 }, 2000);
             }).catch(err => { console.error('Failed to copy: ', err); });
+        }
+        function findNearestStop(lat, lng, type, placeName) {
+            let nearestIndex = -1;
+            let minDistance = Infinity;
+
+            // Loop through all stops to find the closest one
+            stops.forEach((stop, index) => {
+                const dist = map.distance([lat, lng], [stop.lat, stop.lng]);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearestIndex = index;
+                }
+            });
+
+            if (nearestIndex !== -1) {
+                const selectBox = document.getElementById(type + 'Select');
+                const input = document.getElementById(type + 'Input');
+                const msg = document.getElementById(type + 'Msg');
+                
+                // Set the dropdown to the nearest stop
+                selectBox.value = nearestIndex;
+                
+                // Keep the location name the user searched for
+                input.value = placeName || stops[nearestIndex].name;
+                
+                // Show a message about how far the actual stop is
+                msg.innerText = `Nearest stop: ${stops[nearestIndex].name} (~${Math.round(minDistance)}m away)`;
+                
+                // Add a temporary marker for the search result
+                if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
+                searchMarkers[type] = L.marker([lat, lng]).addTo(map).bindPopup(placeName).openPopup();
+                
+                // Center map and calculate
+                map.setView([lat, lng], 15);
+                calculateFare();
+            }
         }
 
         fetchBusStops();
