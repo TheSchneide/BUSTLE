@@ -22,14 +22,19 @@ class Trip extends BaseModel implements Savable {
     }
 
     public function getMostRecent($user_id) {
+        // ADDED: t.pickup_stop_id, t.dropoff_stop_id
         $sql = "SELECT 
+                t.pickup_stop_id,
+                t.dropoff_stop_id,
                 t.fare_amount, 
                 p.stop_name AS pickup_name, 
                 d.stop_name AS dropoff_name
             FROM user_trips t
             JOIN bus_stops p ON t.pickup_stop_id = p.stop_id
             JOIN bus_stops d ON t.dropoff_stop_id = d.stop_id
-            WHERE t.user_id = ?";
+            WHERE t.user_id = ?
+            ORDER BY t.date_created DESC
+            LIMIT 1"; // Ensure we only get the absolute latest one
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $user_id);

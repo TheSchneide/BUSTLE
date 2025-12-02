@@ -279,6 +279,173 @@ if ($isLoggedIn) {
       .aboutUs { padding: 40px 20px; }
       footer { flex-direction: column; gap: 8px; padding: 15px 0; }
     }
+
+    /* --- NEW USER DASHBOARD STYLES --- */
+    .user-dashboard {
+        width: 100%;
+        max-width: 1100px;
+        margin: 20px auto;
+        padding: 0 20px;
+        text-align: left;
+    }
+
+    .welcome-header {
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .welcome-header h1 {
+        font-family: 'Caprasimo', cursive;
+        font-size: 3rem;
+        color: #4F200D;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+
+    .welcome-header p {
+        color: #888;
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+
+    .highlight-name {
+        color: #FF9A00;
+        position: relative;
+        display: inline-block;
+    }
+
+    .dashboard-grid-user {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+    }
+
+    .action-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border: 1px solid #eee;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 200px;
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(255, 154, 0, 0.15);
+        border-color: #FF9A00;
+    }
+
+    .card-icon-bg {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-size: 8rem;
+        color: rgba(255, 154, 0, 0.05);
+        transform: rotate(-15deg);
+        z-index: 0;
+    }
+
+    .card-content {
+        position: relative;
+        z-index: 1;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #4F200D;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .card-data {
+        font-size: 1.1rem;
+        color: #555;
+        line-height: 1.5;
+    }
+
+    .card-data strong { color: #333; }
+
+    .card-action {
+        margin-top: 20px;
+        color: #FF9A00;
+        font-weight: bold;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Saved Routes Section */
+    .saved-routes-section h3 {
+        font-family: 'Outfit', sans-serif;
+        color: #4F200D;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+        border-left: 5px solid #FF9A00;
+        padding-left: 15px;
+    }
+
+    .routes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .route-ticket {
+        background: white;
+        border: 2px dashed #e0e0e0;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .route-ticket::before, .route-ticket::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 20px;
+        height: 20px;
+        background-color: #f4f6f8; /* Matches body bg if needed */
+        border-radius: 50%;
+        transform: translateY(-50%);
+    }
+
+    .route-ticket::before { left: -12px; }
+    .route-ticket::after { right: -12px; }
+
+    .route-ticket:hover {
+        border-color: #FF9A00;
+        background: #fff8e1;
+        transform: scale(1.02);
+    }
+
+    .route-names {
+        font-weight: 700;
+        color: #4F200D;
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    
+    .route-arrow { color: #FF9A00; font-size: 0.9rem; margin: 0 5px; }
+
+    @media (max-width: 768px) {
+        .welcome-header h1 { font-size: 2.2rem; }
+        .dashboard-grid-user { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -396,41 +563,82 @@ if ($isLoggedIn) {
             </div>
         
         <?php else: ?>
-            <h2 class="hidden-text" data-anim="fade-up"><span>Welcome, <?php echo htmlspecialchars($username); ?>!</span></h2>
-            <div class="bussin">
-              <div class="busInfo">
-                  <h2>Recently Viewed</h2>
-                  <p><strong>Pickup:</strong> 
-                      <?php echo $recent_trip ? htmlspecialchars($recent_trip['pickup_name']) : "No recent trip"; ?>
-                  </p>
-                  <p><strong>Dropoff:</strong> 
-                      <?php echo $recent_trip ? htmlspecialchars($recent_trip['dropoff_name']) : "No recent trip"; ?>
-                  </p>
-                  <p><strong>Fare:</strong> ₱ 
-                      <?php echo $recent_trip ? number_format($recent_trip['fare_amount'], 0) : "0"; ?>
-                  </p>
-              </div>
-
-              <div class="currentBus" onclick="window.location.href='Tracker.php?autoLocate=true'">    
-                <h2>Your Current Location</h2>
-                <p id="userAddress">Locating...</p>
-                <p id="userCoords" style="font-size: 0.8rem; color: #888;">Waiting for permission...</p>
-                <p style="font-size: 0.9rem; color: #FF9A00; font-weight: bold; margin-top: 10px;">
-                    Tap to use as Pick-up →
-                </p>
-              </div>
-              <?php if(!empty($all_saved_routes)): ?>
-                <div style="width: 90%; max-width: 600px; margin: 0 auto;">
-                    <h3 style="color: #4F200D; margin-bottom: 10px; text-align: center;">Saved Routes</h3>
-                    
-                    <?php foreach($all_saved_routes as $route): ?>
-                        <div class="savedRouteBtn" onclick="window.location.href='Tracker.php?savedPickup=<?= $route['pickup_stop_id'] ?>&savedDropoff=<?= $route['dropoff_stop_id'] ?>'">
-                            <p style="margin:0;">★ <?= htmlspecialchars($route['pickup_name']) ?> ➝ <?= htmlspecialchars($route['dropoff_name']) ?></p>
-                        </div>
-                    <?php endforeach; ?>
+            
+            <div class="user-dashboard hidden-text" data-anim="fade-up">
+                
+                <div class="welcome-header">
+                    <h1>Hello, <span class="highlight-name"><?php echo htmlspecialchars($username); ?></span>!</h1>
+                    <p>Where would you like to go today?</p>
                 </div>
-              <?php endif; ?>
+
+                <div class="dashboard-grid-user">
+                    
+                    <div class="action-card" onclick="window.location.href='Tracker.php?autoLocate=true'">
+                        <i class="fa-solid fa-location-dot card-icon-bg"></i>
+                        <div class="card-content">
+                            <div class="card-title">
+                                <i class="fa-solid fa-location-crosshairs" style="color:#FF9A00;"></i> Current Location
+                            </div>
+                            <div class="card-data">
+                                <span id="userAddress">Locating...</span>
+                                <br>
+                                <span id="userCoords" style="font-size: 0.8rem; color: #999;">Waiting for permission...</span>
+                            </div>
+                        </div>
+                        <div class="card-action">
+                            Use as Pick-up Point <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </div>
+
+                    <div class="action-card" onclick="<?php echo $recent_trip ? "window.location.href='Tracker.php?savedPickup=" . $recent_trip['pickup_stop_id'] . "&savedDropoff=" . $recent_trip['dropoff_stop_id'] . "'" : ""; ?>" style="<?php echo !$recent_trip ? "opacity:0.7; cursor:default;" : ""; ?>">
+                        <i class="fa-solid fa-clock-rotate-left card-icon-bg"></i>
+                        <div class="card-content">
+                            <div class="card-title">
+                                <i class="fa-solid fa-bus" style="color:#FF9A00;"></i> Last Trip
+                            </div>
+                            <?php if($recent_trip): ?>
+                                <div class="card-data">
+                                    <strong>From:</strong> <?php echo htmlspecialchars($recent_trip['pickup_name']); ?><br>
+                                    <strong>To:</strong> <?php echo htmlspecialchars($recent_trip['dropoff_name']); ?><br>
+                                    <span style="font-size:1.4rem; font-weight:800; color:#4F200D;">₱ <?php echo number_format($recent_trip['fare_amount'], 0); ?></span>
+                                </div>
+                                <div class="card-action">
+                                    Book Again <i class="fa-solid fa-arrow-right"></i>
+                                </div>
+                            <?php else: ?>
+                                <div class="card-data" style="font-style:italic; color:#999; margin-top:10px;">
+                                    No recent trips found.<br>
+                                    Start calculating your first trip!
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                </div>
+
+                <?php if(!empty($all_saved_routes)): ?>
+                    <div class="saved-routes-section">
+                        <h3><i class="fa-solid fa-star" style="color:#FF9A00; margin-right:10px;"></i> Saved Routes</h3>
+                        
+                        <div class="routes-grid">
+                            <?php foreach($all_saved_routes as $route): ?>
+                                <div class="route-ticket" onclick="window.location.href='Tracker.php?savedPickup=<?= $route['pickup_stop_id'] ?>&savedDropoff=<?= $route['dropoff_stop_id'] ?>'">
+                                    <div class="route-names">
+                                        <?= htmlspecialchars($route['pickup_name']) ?>
+                                        <i class="fa-solid fa-arrow-right route-arrow"></i>
+                                        <?= htmlspecialchars($route['dropoff_name']) ?>
+                                    </div>
+                                    <div style="font-size:0.8rem; color:#888; margin-top:5px; text-transform:uppercase; letter-spacing:1px; font-weight:bold;">
+                                        Click to Load
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
             </div>
+
         <?php endif; ?>
 
       <?php else: ?>
