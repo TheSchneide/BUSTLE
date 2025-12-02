@@ -564,26 +564,68 @@ footer a {
 /* --- MOBILE RESPONSIVE NAV & DROPDOWN FLATTENING --- */
 @media (max-width: 768px) {
   #navBar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    background-color: white;
-    position: absolute;
-    top: 100%; 
-    left: 0;
-    width: 100%;
-    overflow: hidden;
-    max-height: 0;
-    transition: 0.4s ease;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  }
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background-color: white;
+        position: absolute;
+        top: 100%; 
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        max-height: 0;
+        transition: 0.4s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        z-index: 9999;
+        padding: 0; /* Remove container padding */
+        gap: 0;     /* Remove flex gap, use item padding instead */
+      }
 
-  #navBar.active {
-    max-height: 500px; /* Increased max-height to fit expanded menu */
-    padding-top: 20px;
-    padding-bottom: 20px;
-  }
+      #navBar.active {
+        max-height: 500px;
+      }
+
+      /* 1. Make direct links (Home, Calculator) look exactly like dropdown items */
+      #navBar > a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        color: #4F200D;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      /* 2. Flatten the Dropdown Container */
+      .dropdown {
+        width: 100%;
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+
+      .dropbtn {
+        display: none !important; /* Hide the User Button */
+      }
+
+      .dropdown-content {
+        display: block !important; /* Force show content */
+        position: static;
+        width: 100%;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      /* 3. Ensure dropdown links match the direct links */
+      .dropdown-content a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        font-size: 20px;
+        text-align: center;
+        color: #4F200D;
+        font-weight: 700;
+      }
 
   .menu-toggle {
     display: flex;
@@ -661,32 +703,6 @@ footer a {
       text-align: center;
   }
 
-  /* FLATTEN DROPDOWN LOGIC */
-  .dropdown {
-      width: 100%;
-      text-align: center;
-  }
-
-  .dropbtn {
-      display: none !important; /* Hide the button */
-  }
-
-  .dropdown-content {
-      display: block !important; /* Force show */
-      position: static; /* No absolute */
-      background: transparent;
-      box-shadow: none;
-      width: 100%;
-      min-width: auto;
-  }
-  
-  .dropdown-content a {
-      text-align: center;
-      padding: 15px; /* Spacing like other nav items */
-      color: #4F200D;
-      font-size: 20px; /* Match #navBar font size */
-  }
-  
   .dropdown-content a:hover {
       background: #f0f0f0;
       color: #4F200D;

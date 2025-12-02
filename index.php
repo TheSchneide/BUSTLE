@@ -285,8 +285,14 @@ if ($isLoggedIn) {
         width: 100%;
         max-width: 1100px;
         margin: 20px auto;
-        padding: 0 20px;
+        padding: 0 15px; /* Slightly reduced padding */
         text-align: left;
+        box-sizing: border-box; /* PREVENTS OVERFLOW */
+    }
+
+    /* Apply border-box to all dashboard elements to prevent size errors */
+    .user-dashboard * {
+        box-sizing: border-box;
     }
 
     .welcome-header {
@@ -316,15 +322,17 @@ if ($isLoggedIn) {
 
     .dashboard-grid-user {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
+        /* Changed 300px to 280px to fit smaller phones */
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 20px;
         margin-bottom: 40px;
+        width: 100%; /* Ensure it stays within parent */
     }
 
     .action-card {
         background: white;
         border-radius: 20px;
-        padding: 30px;
+        padding: 25px; /* Slightly reduced for mobile fit */
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         border: 1px solid #eee;
         transition: all 0.3s ease;
@@ -334,7 +342,7 @@ if ($isLoggedIn) {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 200px;
+        min-height: 180px;
     }
 
     .action-card:hover {
@@ -443,8 +451,81 @@ if ($isLoggedIn) {
     .route-arrow { color: #FF9A00; font-size: 0.9rem; margin: 0 5px; }
 
     @media (max-width: 768px) {
+        .Content {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            width: 100% !important;
+            overflow-x: hidden; /* Hide any accidental scroll */
+        }
+        
+        .user-dashboard {
+            width: 95%; /* Leave a tiny gap on edges */
+            margin: 10px auto;
+        }
         .welcome-header h1 { font-size: 2.2rem; }
         .dashboard-grid-user { grid-template-columns: 1fr; }
+        #navBar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background-color: white;
+        position: absolute;
+        top: 100%; 
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        max-height: 0;
+        transition: 0.4s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        z-index: 9999;
+        padding: 0; /* Remove container padding */
+        gap: 0;     /* Remove flex gap, use item padding instead */
+      }
+
+      #navBar.active {
+        max-height: 500px;
+      }
+
+      /* 1. Make direct links (Home, Calculator) look exactly like dropdown items */
+      #navBar > a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        color: #4F200D;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      /* 2. Flatten the Dropdown Container */
+      .dropdown {
+        width: 100%;
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+
+      .dropbtn {
+        display: none !important; /* Hide the User Button */
+      }
+
+      .dropdown-content {
+        display: block !important; /* Force show content */
+        position: static;
+        width: 100%;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      /* 3. Ensure dropdown links match the direct links */
+      .dropdown-content a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        text-align: center;
+        color: #4F200D;
+        font-weight: 700;
+      }
     }
   </style>
 </head>

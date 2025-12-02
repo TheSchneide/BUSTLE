@@ -30,30 +30,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     <link rel="icon" type="image/x-icon" href="busFavicon.png">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
-        /* CSS Fix for Mobile Nav in Tracker */
-        @media (max-width: 768px) {
-            .menu-toggle {
-                display: flex;
-            }
-            #navBar {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                width: 100%;
-                background: white;
-                flex-direction: column;
-                max-height: 0;
-                overflow: hidden;
-                transition: 0.4s ease;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-                z-index: 9999;
-                padding: 0; 
-            }
-            #navBar.active {
-                max-height: 400px;
-                padding: 20px 0;
-            }
-        }
     </style>
 </head>
 

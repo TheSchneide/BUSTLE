@@ -136,29 +136,70 @@ header {
     font-size: 2rem;
   }
 
+
   #navBar {
-    gap: 1rem;
-    font-size: 16px;
-  }
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        background-color: white;
+        position: absolute;
+        top: 100%; 
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        max-height: 0;
+        transition: 0.4s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        z-index: 9999;
+        padding: 0; /* Remove container padding */
+        gap: 0;     /* Remove flex gap, use item padding instead */
+      }
 
-  /* FLATTEN DROPDOWN LOGIC FOR TRACKER TOO if reused */
-  .dropbtn {
-      display: none !important;
-  }
+      #navBar.active {
+        max-height: 500px;
+      }
 
-  .dropdown-content {
-      display: block !important;
-      position: static;
-      background: transparent;
-      box-shadow: none;
-      width: 100%;
-  }
-  
-  .dropdown-content a {
-      text-align: center;
-      padding: 15px;
-      color: #4F200D;
-  }
+      /* 1. Make direct links (Home, Calculator) look exactly like dropdown items */
+      #navBar > a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        color: #4F200D;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      /* 2. Flatten the Dropdown Container */
+      .dropdown {
+        width: 100%;
+        display: block;
+        margin: 0;
+        padding: 0;
+      }
+
+      .dropbtn {
+        display: none !important; /* Hide the User Button */
+      }
+
+      .dropdown-content {
+        display: block !important; /* Force show content */
+        position: static;
+        width: 100%;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      /* 3. Ensure dropdown links match the direct links */
+      .dropdown-content a {
+        display: block;
+        width: 100%;
+        padding: 15px 0;
+        font-size: 20px;
+        text-align: center;
+        color: #4F200D;
+        font-weight: 700;
+      }
 
   footer {
     flex-direction: column;
