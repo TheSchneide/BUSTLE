@@ -285,6 +285,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     lat: parseFloat(item.latitude),
                     lng: parseFloat(item.longitude)
                 }));
+                stops.sort((a, b) => a.name.localeCompare(b.name));
                 initializeMapMarkers();
                 highlightKeyStops();
                 populateDropdowns();
