@@ -29,8 +29,19 @@ if ($isLoggedIn) {
         $logger = new Logger($conn);
 
         $adminStats['total_users'] = $analytics->getTotalUsers();
+        
         $topRoutes = $analytics->getTopSavedRoutes();
-        $adminStats['top_route_count'] = !empty($topRoutes) ? $topRoutes[0]['count'] : 0;
+        
+        // --- UPDATED LOGIC HERE ---
+        if (!empty($topRoutes)) {
+            $adminStats['top_route_count'] = $topRoutes[0]['count'];
+            // Create a string like "IT Park ➝ Mactan Newtown"
+            $adminStats['top_route_desc'] = htmlspecialchars($topRoutes[0]['pickup']) . " <span style='color:#FF9A00'>➝</span> " . htmlspecialchars($topRoutes[0]['dropoff']);
+        } else {
+            $adminStats['top_route_count'] = 0;
+            $adminStats['top_route_desc'] = "No saved routes yet";
+        }
+        // --------------------------
         
         $allLogs = $logger->getLogs();
         $recentLogs = array_slice($allLogs, 0, 3);
@@ -339,9 +350,16 @@ if ($isLoggedIn) {
 
                     <div class="dash-card">
                         <div>
-                            <i class="fa-solid fa-route dash-icon"></i>
-                            <div class="dash-value"><?php echo $adminStats['top_route_count']; ?></div>
-                            <div class="dash-label">Saves on Top Route</div>
+                            <div>
+                                <i class="fa-solid fa-route dash-icon"></i>
+                                <div class="dash-value"><?php echo $adminStats['top_route_count']; ?></div>
+                                <div class="dash-label">Saves on Top Route</div>
+                            </div>
+                            
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9rem; color: #4F200D; font-weight: bold;">
+                                <?php echo $adminStats['top_route_desc']; ?>
+                            </div>
+                        </div>
                         </div>
                     </div>
 

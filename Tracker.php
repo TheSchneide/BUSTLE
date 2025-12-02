@@ -665,6 +665,35 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 const timeInMinutes = Math.round((totalDistKm / 20) * 60);
                 let timeString = timeInMinutes >= 60 ? `${Math.floor(timeInMinutes / 60)} hr ${timeInMinutes % 60} min` : `${timeInMinutes} min`;
                 const finalFare = computeFareValue(totalDistKm, stops[pIndex].name, stops[dIndex].name);
+                if (finalFare > 41) {
+                    // 1. Show Error UI in the Bottom Sheet
+                    sheetTitle.innerHTML = `<span style="color: #d32f2f; font-size: 1.2rem;">Invalid Route</span>`;
+                    
+                    resultDisplay.innerHTML = `
+                        <div class="fd-body" style="flex-direction: column; align-items: center; text-align: center;">
+                            <div style="color: #d32f2f; font-weight: bold; font-size: 3rem; margin-bottom: 10px;">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                            </div>
+                            <div style="font-weight: bold; color: #4F200D; margin-bottom: 5px;">
+                                Route Unavailable
+                            </div>
+                            <div style="font-size: 0.9rem; color: #666; max-width: 80%;">
+                                The selected route exceeds the maximum fare limit (₱41). Please select a different drop-off point.
+                            </div>
+                        </div>
+                    `;
+
+                    // 2. Disable the "Save" button
+                    saveRouteBtn.disabled = true;
+                    saveRouteBtn.classList.remove('active');
+                    
+                    // 3. Remove the route lines from the map so it looks "cancelled"
+                    currentRouteLayers.forEach(layer => map.removeLayer(layer));
+                    currentRouteLayers = [];
+
+                    // 4. STOP HERE. Do not save trip history or show normal results.
+                    return;
+                }
                 
                 sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
                 const shareText = `🚍 Bustle Trip: ${stops[pIndex].name} ➝ ${stops[dIndex].name} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
