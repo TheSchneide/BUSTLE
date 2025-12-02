@@ -28,6 +28,32 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="icon" type="image/x-icon" href="busFavicon.png">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <style>
+        /* CSS Fix for Mobile Nav in Tracker */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: flex;
+            }
+            #navBar {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: white;
+                flex-direction: column;
+                max-height: 0;
+                overflow: hidden;
+                transition: 0.4s ease;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                z-index: 9999;
+                padding: 0; 
+            }
+            #navBar.active {
+                max-height: 400px;
+                padding: 20px 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -38,6 +64,14 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             <span class="rush-msg">Expect heavy traffic. Seats may not be available immediately.</span>
         </div>
         <button class="rush-close" onclick="closeRushBanner()">✕</button>
+    </div>
+
+    <!-- NEW: WALK INFO MODAL -->
+    <div id="walkInfo" class="walk-info-modal" style="display:none;">
+        <div class="walk-info-title">Nearest Stop</div>
+        <div class="walk-info-value" id="walkTime">-- min</div>
+        <div class="walk-info-sub" id="walkDist">-- m</div>
+        <div class="walk-info-sub" id="nearestStopName" style="font-size:0.75rem; font-style:italic; margin-top:5px; line-height:1.2;"></div>
     </div>
 
     <div id="mapTip" class="map-tip-overlay">
@@ -58,9 +92,17 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             <div id="logo" data-anim="fade-up">
                 <a href="index.php">Bustle</a>
             </div>
+
+            <!-- ADDED HAMBURGER MENU -->
+            <div class="menu-toggle" id="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+
             <div id="navBar" data-anim="fade-up">
                 <a href="index.php">Home</a>
-                <a href="Tracker.php" class="tracker">Tracker</a>
+                <a href="Tracker.php" class="tracker">Calculator</a>
                 
                 <div class="dropdown">
                     <button class="dropbtn">
@@ -92,7 +134,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 <div class="header-row">
                     <div>
                         <label class="input-label" style="display:inline;">Pick-up Point</label>
-                        <button id="pickupMapBtn" class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Map</button>
+                        <button id="pickupMapBtn" class="map-pick-btn" onclick="startPickingLocation('pickup')">📍 Select from Map</button>
                     </div>
                     <button id="saveRouteBtn" class="star-btn" title="Save this Route" disabled>★</button>
                 </div>
@@ -116,7 +158,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 <div class="header-row">
                     <div>
                         <label class="input-label" style="display:inline;">Destination</label>
-                        <button class="map-pick-btn" onclick="startPickingLocation('dest')">📍 Map</button>
+                        <button class="map-pick-btn" onclick="startPickingLocation('dest')">📍 Select from Map</button>
                     </div>
                 </div>
                 <input type="text" id="destInput" class="clean-input" placeholder="Search location..." autocomplete="off">
@@ -159,10 +201,20 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
     </div>
 
     <script>
-        // --- DROPDOWN LOGIC FOR TRACKER ---
+        const menuToggle = document.getElementById('menu-toggle');
+        const navBar = document.getElementById('navBar');
+        
+        if(menuToggle && navBar) {
+            menuToggle.addEventListener('click', () => {
+                menuToggle.classList.toggle('active');
+                navBar.classList.toggle('active');
+            });
+        }
+
         document.addEventListener('click', (e) => {
             const dropBtn = e.target.closest('.dropbtn');
             const dropContent = e.target.closest('.dropdown-content');
+            
             if (dropBtn) {
                 const dropdown = dropBtn.closest('.dropdown');
                 dropdown.classList.toggle('active');
@@ -172,7 +224,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
         });
 
-        // --- CONFIGURATION ---
         const STUDENT_BASE_FARE = 13.00;
         const STUDENT_BASE_DIST = 7.4;
         const STUDENT_EXCESS_RATE = 2.56;
@@ -181,12 +232,21 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         const IS_DISCOUNTED = <?php echo $isDiscounted ? 'true' : 'false'; ?>;
         const USER_SAVED_ROUTES = <?php echo json_encode($mySavedRoutes); ?>;
 
-        // --- MAP SETUP ---
-        const map = L.map('map').setView([10.32853, 123.9089], 13);
+        // --- MAP INIT (Zoom control moved to top-right) ---
+        const map = L.map('map', { zoomControl: false }).setView([10.32853, 123.9089], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // RESET HIGHLIGHT ON MAP CLICK
+        map.on('click', () => {
+            resetHighlights();
+        });
 
         let stops = [];
-        let stopMarkers = []; // Array to store marker objects
+        let stopMarkers = []; 
+        let currentRouteLayers = []; 
+        let walkLineLayer = null; // Stores the orange walking line
+
         const pickupSelect = document.getElementById('pickupSelect');
         const destSelect = document.getElementById('destSelect');
         const pickupInput = document.getElementById('pickupInput');
@@ -202,20 +262,16 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         
         let pickingMode = null; 
         let tempSelectedStopIndex = -1;
-        let currentRouteLayer = null;
         let searchMarkers = { pickup: null, dest: null };
         let debounceTimer;
         
-        // --- NEW: USER LOCATION VARS ---
         let userLat = null;
         let userLng = null;
         let userMarker = null;
 
-        // --- DRAG VARS ---
         let startY = 0;
         let isDragging = false;
 
-        // --- 1. INITIALIZATION ---
         async function fetchBusStops() {
             try {
                 const response = await fetch('get_stops.php');
@@ -227,6 +283,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     lng: parseFloat(item.longitude)
                 }));
                 initializeMapMarkers();
+                highlightKeyStops(); // Highlight specific stops on load
                 populateDropdowns();
                 checkUrlParams();
             } catch (error) { console.error('Error loading stops:', error); }
@@ -235,17 +292,39 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function initializeMapMarkers() {
             stops.forEach((stop, index) => {
                 const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
-                marker.stopId = stop.id; // Attach ID to marker for easy lookup
+                marker.stopId = stop.id; 
+                marker.stopName = stop.name; // For referencing
                 marker.on('click', function(e) {
                     if (pickingMode) {
                         showStopConfirmation(index);
                         L.DomEvent.stopPropagation(e);
                     } else {
+                        // Reset highlights on click too
+                        resetHighlights();
                         this.bindPopup(`<b>${stop.name}</b>`).openPopup();
                     }
                 });
-                stopMarkers.push(marker); // Store in array
+                // Attach name to popup for default behavior
+                marker.bindPopup(`<b>${stop.name}</b>`);
+                stopMarkers.push(marker); 
             });
+        }
+
+        // --- HIGHLIGHT FEATURE (UPDATED TO USE ID) ---
+        function highlightKeyStops() {
+            // Need small timeout to ensure markers are ready
+            setTimeout(() => {
+                stopMarkers.forEach(marker => {
+                    // Check for ID 1 (IT Park) or 31 (Mactan Newtown)
+                    if(marker.stopId == 1 || marker.stopId == 31) {
+                        marker.openPopup();
+                    }
+                });
+            }, 500);
+        }
+
+        function resetHighlights() {
+            map.closePopup();
         }
 
         function populateDropdowns() {
@@ -258,17 +337,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             });
         }
 
-        // --- 2. MAP PICKING & HIGHLIGHT ---
         function startPickingLocation(type) {
             pickingMode = type;
             closeSheet();
-            
-            // Remove highlighting if user clicked the button
             const btn = document.getElementById('pickupMapBtn');
             btn.classList.remove('tour-highlight');
             localStorage.setItem('hasSeenMapHighlight', 'true');
-
-            // Show instruction
             const hasSeenTip = localStorage.getItem('hasSeenMapTip');
             if (!hasSeenTip) {
                 document.getElementById('mapTip').classList.add('show');
@@ -307,27 +381,70 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             openSheet();
         }
 
-        // --- 3. RECENTER & USER LOCATION LOGIC ---
+        // --- UPDATED LOCATE USER FOR REAL-TIME WALK INFO ---
         function locateUser() {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
+                // Use watchPosition for updates
+                navigator.geolocation.watchPosition(
                     (position) => {
                         userLat = position.coords.latitude;
                         userLng = position.coords.longitude;
                         
-                        // Update Marker
-                        if(userMarker) map.removeLayer(userMarker);
+                        if(userMarker) {
+                            userMarker.setLatLng([userLat, userLng]);
+                        } else {
+                            const userIcon = L.divIcon({
+                                className: 'user-dot-container',
+                                html: '<div class="user-dot"></div>',
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            });
+                            userMarker = L.marker([userLat, userLng], {icon: userIcon}).addTo(map);
+                        }
                         
-                        const userIcon = L.divIcon({
-                            className: 'user-dot-container',
-                            html: '<div class="user-dot"></div>',
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10]
-                        });
-                        userMarker = L.marker([userLat, userLng], {icon: userIcon}).addTo(map);
+                        updateNearestStopInfo();
                     },
-                    (error) => console.log("Location permission denied")
+                    (error) => console.log("Location permission denied"),
+                    { enableHighAccuracy: true }
                 );
+            }
+        }
+
+        function updateNearestStopInfo() {
+            if(!userLat || stops.length === 0) return;
+
+            let minDist = Infinity;
+            let nearestStop = null;
+
+            stops.forEach(stop => {
+                const dist = map.distance([userLat, userLng], [stop.lat, stop.lng]);
+                if(dist < minDist) {
+                    minDist = dist;
+                    nearestStop = stop;
+                }
+            });
+
+            if(nearestStop) {
+                const walkTimeMin = Math.round(minDist / 83); // Approx 83m per min (5km/h)
+                
+                document.getElementById('walkInfo').style.display = 'flex';
+                document.getElementById('walkTime').innerText = (walkTimeMin < 1 ? "< 1" : walkTimeMin) + " min";
+                document.getElementById('walkDist').innerText = Math.round(minDist) + " m";
+                document.getElementById('nearestStopName').innerText = "to " + nearestStop.name;
+
+                // --- DRAW ORANGE DOTTED LINE ---
+                if (walkLineLayer) {
+                    map.removeLayer(walkLineLayer);
+                }
+                walkLineLayer = L.polyline(
+                    [[userLat, userLng], [nearestStop.lat, nearestStop.lng]], 
+                    {
+                        color: '#FF9A00',
+                        dashArray: '10, 10',
+                        weight: 4,
+                        opacity: 0.8
+                    }
+                ).addTo(map);
             }
         }
 
@@ -335,13 +452,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             if (userLat && userLng) {
                 map.flyTo([userLat, userLng], 15);
             } else {
-                locateUser(); // Try again if null
-                // Small delay to allow update
+                // Just trigger logic, let watchPosition handle update
+                // But if first time, maybe timeout
                 setTimeout(() => { if(userLat) map.flyTo([userLat, userLng], 15); }, 1000);
             }
         }
 
-        // --- 4. FARE & LOGIC ---
         function computeFareValue(distKm, startName, endName) {
             const isStudent = IS_DISCOUNTED;
             let billableDistance = distKm;
@@ -352,23 +468,17 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             if (isStudent) {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = STUDENT_BASE_FARE + (excess * STUDENT_EXCESS_RATE);
-                // Special Route: IT Park <-> Mactan Newtown
                 if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 41;
-                // Special Route: IT Park <-> Saac (NEW)
                 if ((startName === "IT Park" && endName === "Saac") || (startName === "Saac" && endName === "IT Park")) fare = 29;
             } else {
                 const excess = Math.max(0, billableDistance - STUDENT_BASE_DIST);
                 fare = REGULAR_BASE_FARE + (excess * REGULAR_EXCESS_RATE);
-                // Special Route: IT Park <-> Mactan Newtown
                 if ((startName === "IT Park" && endName === "Mactan Newtown") || (startName === "Mactan Newtown" && endName === "IT Park")) fare = 51; 
-                // Special Route: IT Park <-> Saac (NEW - Regular Price Calculation if needed, or default)
-                // Assuming Regular fare follows standard logic unless specified otherwise
             }
             if (fare < 13.00) fare = 13.00;
             return Math.round(fare);
         }
 
-        // Helper to reset marker visibility
         function resetMarkerVisibility() {
             stopMarkers.forEach(marker => {
                 if (!map.hasLayer(marker)) {
@@ -377,27 +487,32 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             });
         }
 
+        function isRushHour() {
+            const date = new Date();
+            const hour = date.getHours();
+            return (hour >= 7 && hour < 9) || (hour >= 16 && hour < 20);
+        }
+
+        function isSegmentRed(idA, idB) {
+            if (idA >= 32 && idA <= 49 && idB >= 32 && idB <= 49) return true;
+            const redPairs = [[24, 49],[49, 18],[7, 6],[6, 5],[5, 4],[4, 3],[3, 2]];
+            return redPairs.some(pair => pair[0] === idA && pair[1] === idB);
+        }
+
         async function calculateFare() {
             const pickupVal = pickupSelect.value;
             const destVal = destSelect.value;
             const resultDisplay = document.getElementById('fareResult');
 
-            if (pickupVal !== "" && destVal === "") {
-                calculateRange(parseInt(pickupVal));
-                saveRouteBtn.disabled = true;
-                saveRouteBtn.classList.remove('active');
-                return;
-            }
-
             if (pickupVal === "" || destVal === "") {
                 saveRouteBtn.disabled = true;
                 saveRouteBtn.classList.remove('active');
+                if(pickupVal !== "") calculateRange(parseInt(pickupVal));
                 return;
             }
 
             saveRouteBtn.disabled = false;
             
-            // Check star status
             const pId = stops[pickupVal].id;
             const dId = stops[destVal].id;
             const isSaved = USER_SAVED_ROUTES.some(r => r.pickup_stop_id == pId && r.dropoff_stop_id == dId);
@@ -406,186 +521,188 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const pIndex = parseInt(pickupVal);
             const dIndex = parseInt(destVal);
 
+            currentRouteLayers.forEach(layer => map.removeLayer(layer));
+            currentRouteLayers = [];
+
             if (pIndex === dIndex) {
                 resultDisplay.innerHTML = `₱ 0 <span class="fare-details">Start and End are same</span>`;
                 sheetTitle.innerText = "₱ 0";
-                if (currentRouteLayer) map.removeLayer(currentRouteLayer); return;
+                return;
             }
 
             resultDisplay.innerHTML = `Calculating...`;
             sheetTitle.innerText = "BUS";
-            if (currentRouteLayer) map.removeLayer(currentRouteLayer);
 
-            // --- UPDATED ROUTING LOGIC START ---
+            // --- 1. DETERMINE ROUTE STOPS ---
             let routeStops = [];
-            // Parse IDs as integers for reliable comparison
             const pIDVal = parseInt(stops[pIndex].id);
             const dIDVal = parseInt(stops[dIndex].id);
             let customRoute = false;
 
-            // Scenario Special: Pickup 24-31, Dest 52 or <= 18
             if (pIDVal >= 24 && pIDVal <= 31 && (dIDVal == 52 || dIDVal <= 18)) {
-                // 1. Pickup -> 24 (Descending)
-                const part1 = stops.filter(s => {
-                    const sid = parseInt(s.id);
-                    return sid <= pIDVal && sid >= 24;
-                }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
-
-                // 2. Stop 52
+                const part1 = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= 24; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 const part2 = stops.filter(s => parseInt(s.id) == 52);
-
                 let part3 = [];
-                // 3. 18 -> Destination (Descending), only if dest <= 18
                 if (dIDVal <= 18) {
-                    part3 = stops.filter(s => {
-                        const sid = parseInt(s.id);
-                        return sid <= 18 && sid >= dIDVal;
-                    }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                    part3 = stops.filter(s => { const sid = parseInt(s.id); return sid <= 18 && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 }
-
                 routeStops = part1.concat(part2).concat(part3);
                 customRoute = true;
             }
-            // Scenario 1: Pickup 2-31 (Changed from 1-31), Descending (Dest < Pickup)
             else if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
-                // Descending ID order strictly
-                routeStops = stops.filter(s => {
-                    const sid = parseInt(s.id);
-                    return sid <= pIDVal && sid >= dIDVal;
-                }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
+                routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 customRoute = true;
             }
-            // Scenario 2: Pickup 1 OR >= 32
             else if (pIDVal == 1 || pIDVal >= 32) {
-                
-                // Sub-scenario: Destination 24-31 (Loop via 49)
                 if (dIDVal >= 24 && dIDVal <= 31) {
                     let part1 = [];
                     if (pIDVal == 1) {
-                        // ID 1 then jump to 32 -> 49
                         const stop1 = stops.filter(s => parseInt(s.id) == 1);
-                        const stops32to49 = stops.filter(s => {
-                            const sid = parseInt(s.id);
-                            return sid >= 32 && sid <= 49;
-                        }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                        const stops32to49 = stops.filter(s => { const sid = parseInt(s.id); return sid >= 32 && sid <= 49; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                         part1 = stop1.concat(stops32to49);
                     } else {
-                        // Standard >=32 ascending to 49
-                        part1 = stops.filter(s => {
-                            const sid = parseInt(s.id);
-                            return sid >= pIDVal && sid <= 49;
-                        }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                        part1 = stops.filter(s => { const sid = parseInt(s.id); return sid >= pIDVal && sid <= 49; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                     }
-
-                    // Part 2: 24 -> Destination (Ascending)
-                    const part2 = stops.filter(s => {
-                        const sid = parseInt(s.id);
-                        return sid >= 24 && sid <= dIDVal;
-                    }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
-                    
+                    const part2 = stops.filter(s => { const sid = parseInt(s.id); return sid >= 24 && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                     routeStops = part1.concat(part2);
                     customRoute = true;
                 }
-                
-                // Sub-scenario: Standard Forward (Dest <= 49)
                 else if (dIDVal <= 49) {
                     if (pIDVal == 1) {
-                         // Logic for ID 1 going to standard dests (likely 32+)
-                         // "it starts from id number 32"
                          if (dIDVal >= 32) {
                              const stop1 = stops.filter(s => parseInt(s.id) == 1);
-                             const stops32toDest = stops.filter(s => {
-                                const sid = parseInt(s.id);
-                                return sid >= 32 && sid <= dIDVal;
-                             }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                             const stops32toDest = stops.filter(s => { const sid = parseInt(s.id); return sid >= 32 && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                              routeStops = stop1.concat(stops32toDest);
                              customRoute = true;
                          }
                     } else {
-                        // Standard logic for 32+
                         if (dIDVal > pIDVal) {
-                             routeStops = stops.filter(s => {
-                                const sid = parseInt(s.id);
-                                return sid >= pIDVal && sid <= dIDVal;
-                             }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+                             routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid >= pIDVal && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                              customRoute = true;
                         }
                     }
                 }
             }
 
-            // Fallback to original array-index-based logic if no custom rule applied
             if (!customRoute) {
                 if (pIndex < dIndex) { routeStops = stops.slice(pIndex, dIndex + 1); }
                 else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
             }
-            // --- UPDATED ROUTING LOGIC END ---
 
-            // --- HIDE LOGIC FOR 49/52 (UPDATED) ---
-            // Reset marker visibility first
+            // --- 2. HIDE LOGIC ---
             resetMarkerVisibility();
-            
-            // Rule: "if i start picking from 31 to 24, the 49 automatically hides"
-            // Rule: "if its from 1 or 32 above, it automatically hides 52"
-            
             if (pIDVal >= 24 && pIDVal <= 31) {
-                // Hide ID 49
                 const marker49 = stopMarkers.find(m => m.stopId == 49);
                 if (marker49) map.removeLayer(marker49);
             } else if (pIDVal == 1 || pIDVal >= 32) {
-                // Hide ID 52
                 const marker52 = stopMarkers.find(m => m.stopId == 52);
                 if (marker52) map.removeLayer(marker52);
             }
 
-            const coordsString = routeStops.map(s => `${s.lng},${s.lat}`).join(';');
-            const routeURL = `https://router.project-osrm.org/route/v1/foot/${coordsString}?overview=full&geometries=geojson`;
-
+            // --- 3. OPTIMIZED FETCHING (Group segments by color) ---
             try {
-                const response = await fetch(routeURL);
-                const data = await response.json();
-                if (data.routes && data.routes.length > 0) {
-                    const route = data.routes[0];
-                    const distKm = route.distance / 1000;
-                    const timeInMinutes = Math.round((distKm / 20) * 60);
-                    let timeString = timeInMinutes >= 60 ? `${Math.floor(timeInMinutes / 60)} hr ${timeInMinutes % 60} min` : `${timeInMinutes} min`;
+                let totalDistKm = 0;
+                const requests = [];
+                const rush = isRushHour();
 
-                    const finalFare = computeFareValue(distKm, stops[pIndex].name, stops[dIndex].name);
-                    sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
+                if (routeStops.length > 1) {
+                    // Initialize first batch
+                    let p1 = routeStops[0];
+                    let p2 = routeStops[1];
+                    let initialColor = rush && isSegmentRed(parseInt(p1.id), parseInt(p2.id)) ? 'red' : 'green';
+                    
+                    let currentBatch = {
+                        color: initialColor,
+                        stops: [p1, p2]
+                    };
 
-                    const shareText = `🚍 Bustle Trip: ${stops[pIndex].name} ➝ ${stops[dIndex].name} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
+                    for (let i = 1; i < routeStops.length - 1; i++) {
+                        p1 = routeStops[i];
+                        p2 = routeStops[i+1];
+                        let segColor = rush && isSegmentRed(parseInt(p1.id), parseInt(p2.id)) ? 'red' : 'green';
 
-                    resultDisplay.innerHTML = `
-                        <div class="fd-body">
-                            <div class="fd-route">
-                                <div><span class="fd-label">Start</span><span class="fd-address">${stops[pIndex].name}</span></div>
-                                <div class="fd-arrow">↓</div>
-                                <div><span class="fd-label">Finish</span><span class="fd-address">${stops[dIndex].name}</span></div>
-                            </div>
-                            <div class="fd-info">
-                                <span class="fd-info-label">Total Fare <button class="copy-btn" onclick="copyToClipboard('${shareText}', this)">Copy</button></span>
-                                <span class="fd-price">₱ ${finalFare}</span>
-                                <span class="fd-time">Estimated Time~${timeString}</span>
-                            </div>
-                        </div>
-                    `;
-
-                    // --- TRAFFIC COLOR LOGIC (UPDATED) ---
-                    const date = new Date();
-                    const hour = date.getHours(); 
-                    let routeColor = 'blue'; // Default to Normal (Blue)
-
-                    if ((hour >= 7 && hour < 9) || (hour >= 16 && hour < 20)) {
-                        routeColor = 'red'; // Heavy Traffic (7-9 AM, 4-8 PM)
-                    } else if (hour >= 20 || hour < 7) { 
-                        // CHANGED: GREEN Starts at 8 PM (20) instead of 10 PM
-                        routeColor = 'green'; // Smooth Traffic (8 PM - 7 AM)
+                        if (segColor === currentBatch.color) {
+                            // If color matches, append the NEXT stop (p2) to the current batch
+                            // Note: p1 is already the last stop of the previous segment
+                            currentBatch.stops.push(p2);
+                        } else {
+                            // Color changed: close current batch and start new
+                            requests.push(fetchBatch(currentBatch));
+                            currentBatch = { color: segColor, stops: [p1, p2] };
+                        }
                     }
-
-                    currentRouteLayer = L.geoJSON(route.geometry, { style: { color: routeColor, weight: 4, opacity: 0.7 } }).addTo(map);
-                    map.fitBounds(currentRouteLayer.getBounds(), { padding: [50, 50] });
-                    saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
+                    // Push last batch
+                    requests.push(fetchBatch(currentBatch));
                 }
+
+                // Helper: Fetch a single batch
+                async function fetchBatch(batch) {
+                    let coordList = [];
+                    for(let i=0; i < batch.stops.length; i++) {
+                        const s = batch.stops[i];
+                        coordList.push(`${s.lng},${s.lat}`);
+                        
+                        // HIDDEN ROUTE LOGIC: NFA (2) -> IT Park (1)
+                        if (parseInt(s.id) === 2 && (i + 1 < batch.stops.length) && parseInt(batch.stops[i+1].id) === 1) {
+                            coordList.push("123.90621644479106,10.3273140907822");
+                        }
+                    }
+                    
+                    const coords = coordList.join(';');
+                    const url = `https://router.project-osrm.org/route/v1/foot/${coords}?overview=full&geometries=geojson`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    return { data, color: batch.color };
+                }
+
+                const results = await Promise.all(requests);
+                const featureGroup = L.featureGroup();
+
+                results.forEach(res => {
+                    const data = res.data;
+                    const color = res.color;
+                    
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        totalDistKm += (route.distance / 1000);
+                        
+                        const layer = L.geoJSON(route.geometry, { 
+                            style: { color: color, weight: 4, opacity: 0.8 } 
+                        }).addTo(map);
+                        
+                        currentRouteLayers.push(layer);
+                        layer.addTo(featureGroup);
+                    }
+                });
+
+                if(currentRouteLayers.length > 0) {
+                    map.fitBounds(featureGroup.getBounds(), { padding: [50, 50] });
+                }
+
+                const timeInMinutes = Math.round((totalDistKm / 20) * 60);
+                let timeString = timeInMinutes >= 60 ? `${Math.floor(timeInMinutes / 60)} hr ${timeInMinutes % 60} min` : `${timeInMinutes} min`;
+                const finalFare = computeFareValue(totalDistKm, stops[pIndex].name, stops[dIndex].name);
+                
+                sheetTitle.innerHTML = `<span style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.5rem;">₱ ${finalFare}</span>`;
+                const shareText = `🚍 Bustle Trip: ${stops[pIndex].name} ➝ ${stops[dIndex].name} | 💰 Fare: ₱${finalFare} | ⏳ ${timeString}`;
+
+                resultDisplay.innerHTML = `
+                    <div class="fd-body">
+                        <div class="fd-route">
+                            <div><span class="fd-label">Start</span><span class="fd-address">${stops[pIndex].name}</span></div>
+                            <div class="fd-arrow">↓</div>
+                            <div><span class="fd-label">Finish</span><span class="fd-address">${stops[dIndex].name}</span></div>
+                        </div>
+                        <div class="fd-info">
+                            <span class="fd-info-label">Total Fare <button class="copy-btn" onclick="copyToClipboard('${shareText}', this)">Copy</button></span>
+                            <span class="fd-price">₱ ${finalFare}</span>
+                            <span class="fd-time">Estimated Time~${timeString}</span>
+                        </div>
+                    </div>
+                `;
+                
+                saveTripToHistory(stops[pIndex].id, stops[dIndex].id, finalFare);
+
             } catch (error) { console.error(error); }
         }
 
@@ -628,7 +745,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             } catch(e) { console.error("Range calc error", e); }
         }
 
-        // --- INPUT & UI HANDLERS ---
         document.getElementById('pickupInput').addEventListener('input', (e) => handleInput(e, 'pickupSuggestions', 'pickup'));
         document.getElementById('destInput').addEventListener('input', (e) => handleInput(e, 'destSuggestions', 'dest'));
 
@@ -701,14 +817,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             updateSavedRoute();
         });
 
-        // --- DRAG LOGIC ---
         function openSheet() {
             bottomSheet.classList.add('expanded');
             sheetOverlay.classList.add('active');
             bottomSheet.style.transform = ""; 
             if(pickingMode) { pickingMode = null; }
             
-            // --- NEW: Highlight Map Button if first time ---
             const hasSeenHighlight = localStorage.getItem('hasSeenMapHighlight');
             if(!hasSeenHighlight) {
                 document.getElementById('pickupMapBtn').classList.add('tour-highlight');
@@ -765,7 +879,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             calculateFare();
         });
 
-        // --- CHECKS ---
         function checkUrlParams() {
             const urlParams = new URLSearchParams(window.location.search);
             const savedPickupId = urlParams.get('savedPickup');

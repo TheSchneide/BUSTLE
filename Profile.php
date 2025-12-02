@@ -4,6 +4,7 @@ include 'Database.php';
 include 'Trip.php';
 include 'User.php';
 include 'BusStop.php';
+include 'SavedRoute.php'; 
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.html");
@@ -37,7 +38,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 2. ADMIN: ADD STOP
+    // 2. USER: REMOVE SAVED ROUTE
+    if (isset($_POST['delete_route']) && !$isAdmin) {
+        $savedObj = new SavedRoute($conn);
+        if ($savedObj->remove($_SESSION['user_id'], $_POST['pickup_id'], $_POST['dropoff_id'])) {
+            $message = "Route removed from favorites.";
+            $messageType = "success";
+        } else {
+            $message = "Failed to remove route.";
+            $messageType = "error";
+        }
+    }
+
+    // 3. ADMIN: ADD STOP
     if (isset($_POST['add_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         if ($stopObj->addStop($_POST['stop_name'], $_POST['latitude'], $_POST['longitude'])) {
@@ -49,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 3. ADMIN: MODIFY STOP
+    // 4. ADMIN: MODIFY STOP
     if (isset($_POST['edit_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         if ($stopObj->updateStop($_POST['stop_id'], $_POST['stop_name'], $_POST['latitude'], $_POST['longitude'])) {
@@ -61,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 4. ADMIN: DELETE STOP
+    // 5. ADMIN: DELETE STOP
     if (isset($_POST['delete_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         if ($stopObj->deleteStop($_POST['stop_id'])) {
@@ -76,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // --- FETCH DATA ---
 $recent_trip = null;
+$mySavedRoutes = [];
 $stops = [];
 $users = [];
 
@@ -86,8 +100,19 @@ if ($isAdmin) {
     $userObj = new User($conn);
     $users = $userObj->getAllUsers();
 } else {
+    // Fetch Trip History
     $trip = new Trip($conn);
     $recent_trip = $trip->getMostRecent($_SESSION['user_id']);
+
+    // Fetch Saved Routes
+    $savedObj = new SavedRoute($conn);
+    $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
+
+    // Prepare Email Masking
+    $rawEmail = $_SESSION['email'];
+    $atPos = strpos($rawEmail, "@");
+    // Show 1st letter + fixed 5 asterisks + domain
+    $maskedEmail = substr($rawEmail, 0, 1) . "*****" . substr($rawEmail, $atPos);
 }
 ?>
 <!DOCTYPE html>
@@ -99,6 +124,70 @@ if ($isAdmin) {
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        /* Saved Routes List Styles */
+        .saved-route-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff8e1;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ffe0b2;
+            transition: transform 0.2s;
+        }
+        .saved-route-item:hover {
+            transform: translateX(5px);
+            border-color: #FF9A00;
+        }
+        .route-names {
+            font-weight: bold;
+            color: #4F200D;
+        }
+        .route-arrow {
+            color: #FF9A00;
+            margin: 0 8px;
+        }
+        .remove-star-btn {
+            background: none;
+            border: none;
+            color: #FF9A00;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.2s, color 0.2s;
+        }
+        .remove-star-btn:hover {
+            transform: scale(1.2);
+            color: #e65100;
+        }
+
+        /* CSS Fix for Mobile Nav in Profile */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: flex;
+            }
+            #navBar {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: white;
+                flex-direction: column;
+                max-height: 0;
+                overflow: hidden;
+                transition: 0.4s ease;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                z-index: 9999;
+                padding: 0;
+            }
+            #navBar.active {
+                max-height: 400px;
+                padding: 20px 0;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -108,10 +197,18 @@ if ($isAdmin) {
       <div id="logo">
         <a href="index.php">Bustle</a>
       </div>
+
+      <!-- ADDED HAMBURGER MENU -->
+      <div class="menu-toggle" id="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
       <div id="navBar">
         <a href="index.php" class="Home">Home</a>
         <?php if(!$isAdmin): ?>
-            <a href="Tracker.php" class="tracker">Tracker</a>
+            <a href="Tracker.php" class="tracker">Calculator</a>
         <?php endif; ?>
         
         <div class="dropdown">
@@ -186,7 +283,6 @@ if ($isAdmin) {
                                     <td><input type="text" name="latitude" value="<?php echo $stop['latitude']; ?>" size="8"></td>
                                     <td><input type="text" name="longitude" value="<?php echo $stop['longitude']; ?>" size="8"></td>
                                     
-                                    <!-- FIXED ALIGNMENT: Removed flex, added margins and vertical-align -->
                                     <td>
                                         <input type="hidden" name="stop_id" value="<?php echo $stop['stop_id']; ?>">
                                         <button type="submit" name="edit_stop" style="background:none; border:none; color:blue; cursor:pointer; margin-right: 10px; vertical-align: middle;">Update</button>
@@ -237,7 +333,8 @@ if ($isAdmin) {
                 </div>
                 <div class="profile-details">
                     <h2><?php echo htmlspecialchars($_SESSION['username']); ?></h2>
-                    <p><i class="fa-solid fa-envelope"></i> <?php echo htmlspecialchars($_SESSION['email']); ?></p>
+                    <!-- EMAIL MASKING IMPLEMENTED HERE -->
+                    <p><i class="fa-solid fa-envelope"></i> <?php echo htmlspecialchars($maskedEmail); ?></p>
                     <p><i class="fa-solid fa-cake-candles"></i> <?php echo htmlspecialchars($_SESSION['birthdate']); ?></p>
                     <p><span style="background:#eee; padding:2px 8px; border-radius:4px; font-size:0.8rem;"><?php echo isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : 'Regular'; ?></span></p>
                 </div>
@@ -258,8 +355,35 @@ if ($isAdmin) {
             <?php endif; ?>
         </div>
 
-        <!-- UPDATE SETTINGS -->
+        <!-- SAVED ROUTES (NEW SECTION) -->
         <div class="profile-card anim-enter slide-up delay-3">
+            <h3><i class="fa-solid fa-star"></i> My Saved Routes</h3>
+            <?php if(!empty($mySavedRoutes)): ?>
+                <div style="margin-top: 15px;">
+                    <?php foreach($mySavedRoutes as $route): ?>
+                        <div class="saved-route-item">
+                            <span class="route-names">
+                                <?= htmlspecialchars($route['pickup_name']) ?> 
+                                <i class="fa-solid fa-arrow-right route-arrow"></i> 
+                                <?= htmlspecialchars($route['dropoff_name']) ?>
+                            </span>
+                            <form method="POST" style="margin:0;">
+                                <input type="hidden" name="pickup_id" value="<?= $route['pickup_stop_id'] ?>">
+                                <input type="hidden" name="dropoff_id" value="<?= $route['dropoff_stop_id'] ?>">
+                                <button type="submit" name="delete_route" class="remove-star-btn" title="Click to remove from saved">
+                                    <i class="fa-solid fa-star"></i>
+                                </button>
+                            </form>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <p style="color:#888; font-style:italic; margin-top:10px;">You haven't saved any routes yet.</p>
+            <?php endif; ?>
+        </div>
+
+        <!-- UPDATE SETTINGS -->
+        <div class="profile-card anim-enter slide-up delay-4">
             <h3>Update Profile</h3>
             <p style="font-size:0.9rem; color:#666; margin-bottom:20px;">Confirm your email and current password to make changes.</p>
             
@@ -292,6 +416,17 @@ if ($isAdmin) {
 </div>
 
 <script>
+    // --- ADDED: MOBILE NAV TOGGLE LOGIC ---
+    const menuToggle = document.getElementById('menu-toggle');
+    const navBar = document.getElementById('navBar');
+    
+    if(menuToggle && navBar) {
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            navBar.classList.toggle('active');
+        });
+    }
+
     function openTab(tabName) {
         var i;
         var x = document.getElementsByClassName("tab-content");
@@ -311,6 +446,8 @@ if ($isAdmin) {
     document.addEventListener('click', (e) => {
         const dropBtn = e.target.closest('.dropbtn');
         const dropContent = e.target.closest('.dropdown-content');
+        
+        // Mobile toggle handled by menuToggle event, but dropdown needs logic
         if (dropBtn) {
             const dropdown = dropBtn.closest('.dropdown');
             dropdown.classList.toggle('active');

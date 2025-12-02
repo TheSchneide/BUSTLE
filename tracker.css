@@ -95,7 +95,7 @@ header {
 }
 
 .dropbtn:hover {
-    background-color: #FF9A00;
+    background-color: #4F200D;
     color: white;
 }
 
@@ -965,4 +965,50 @@ footer a {
   100% {
     box-shadow: 0 0 0 0 rgba(255, 154, 0, 0);
   }
+}
+
+/* --- WALK INFO MODAL (Top Left) --- */
+.walk-info-modal {
+    position: fixed;
+    top: 100px; /* Below navbar/header area */
+    left: 20px;
+    background: white;
+    width: 130px;
+    height: 130px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-family: 'Outfit', sans-serif;
+    border-left: 5px solid #FF9A00;
+    animation: slideInLeft 0.5s ease-out;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.walk-info-title {
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.walk-info-value {
+    font-size: 1.2rem;
+    color: #4F200D;
+    font-weight: 800;
+}
+
+.walk-info-sub {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 2px;
 }
