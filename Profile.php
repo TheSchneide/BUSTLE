@@ -131,6 +131,7 @@ if ($isAdmin) {
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="busFavicon.png">
     <style>
 
         * { box-sizing: border-box; }
