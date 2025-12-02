@@ -24,7 +24,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($action === 'save') {
         $success = $routeManager->save($user_id, $pickup, $dropoff);
     } else {
-        // Now passing specific IDs to remove only that route
         $success = $routeManager->remove($user_id, $pickup, $dropoff);
     }
 

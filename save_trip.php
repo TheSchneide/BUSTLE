@@ -1,7 +1,7 @@
 <?php
 session_start();
 include 'Database.php';
-include 'Trip.php'; // Include the class
+include 'Trip.php'; 
 
 header('Content-Type: application/json');
 
@@ -19,7 +19,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $dropoff_id = $_POST['dropoff_id'];
     $fare = $_POST['fare'];
 
-    // This now triggers the "Insert or Update" logic in Trip.php
     if ($trip->save($user_id, $pickup_id, $dropoff_id, $fare)) {
         echo json_encode(['status' => 'success', 'message' => 'Trip history updated']);
     } else {

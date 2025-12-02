@@ -138,7 +138,7 @@ hr {
 
 #navBar {
     display: flex;
-    gap: 2rem;
+    gap: 1rem;
     font-size: 20px;
     align-items: center;
 }
@@ -157,7 +157,6 @@ hr {
   transform: translateY(-2px);
 }
 
-/* --- DROPDOWN STYLES (UPDATED) --- */
 .dropdown {
     position: relative;
     display: inline-block;
@@ -189,9 +188,9 @@ hr {
 
 .dropdown-content {
     display: none;
-    position: absolute; /* Ensures it floats on desktop */
+    position: absolute; 
     right: 0;
-    top: 110%; /* Push it slightly down */
+    top: 110%;
     background-color: #f9f9f9;
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
@@ -216,12 +215,12 @@ hr {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Show dropdown when active class is added via JS */
+
 .dropdown.active .dropdown-content {
     display: block;
 }
 
-/* --- PROFILE PAGE STYLES --- */
+
 .profile-container {
     max-width: 900px;
     margin: 100px auto 50px;
@@ -268,7 +267,7 @@ hr {
     color: #666;
 }
 
-/* Forms */
+
 .form-group {
     margin-bottom: 15px;
 }
@@ -302,7 +301,7 @@ hr {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Admin Tabs */
+
 .tab-nav {
     display: flex;
     gap: 10px;
@@ -328,7 +327,6 @@ hr {
     display: block;
 }
 
-/* Admin Tables */
 .admin-table {
     width: 100%;
     border-collapse: collapse;
@@ -338,13 +336,13 @@ hr {
     padding: 12px;
     text-align: left;
     border-bottom: 1px solid #ddd;
-    vertical-align: middle; /* Added to vertically center inputs */
+    vertical-align: middle; 
 }
 .admin-table th {
     background-color: #f9f9f9;
     color: #4F200D;
 }
-/* Ensure input and button alignment consistency */
+
 .admin-table input, 
 .admin-table button {
     vertical-align: middle;
@@ -481,7 +479,6 @@ hr {
     max-width: 200rem;
 }
 
-/*if logged in*/
 .bussin {
   position: relative;
   left: 0;
@@ -560,8 +557,6 @@ footer a {
     font-weight: bold;
 }
 
-
-/* --- MOBILE RESPONSIVE NAV & DROPDOWN FLATTENING --- */
 @media (max-width: 768px) {
   #navBar {
         display: flex;
@@ -578,15 +573,14 @@ footer a {
         transition: 0.4s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         z-index: 9999;
-        padding: 0; /* Remove container padding */
-        gap: 0;     /* Remove flex gap, use item padding instead */
+        padding: 0; 
+        gap: 0;     
       }
 
       #navBar.active {
         max-height: 500px;
       }
 
-      /* 1. Make direct links (Home, Calculator) look exactly like dropdown items */
       #navBar > a {
         display: block;
         width: 100%;
@@ -596,7 +590,7 @@ footer a {
         font-weight: 700;
       }
 
-      /* 2. Flatten the Dropdown Container */
+    
       .dropdown {
         width: 100%;
         display: block;
@@ -605,18 +599,18 @@ footer a {
       }
 
       .dropbtn {
-        display: none !important; /* Hide the User Button */
+        display: none !important; 
       }
 
       .dropdown-content {
-        display: block !important; /* Force show content */
+        display: block !important; 
         position: static;
         width: 100%;
         background: transparent;
         box-shadow: none;
       }
 
-      /* 3. Ensure dropdown links match the direct links */
+
       .dropdown-content a {
         display: block;
         width: 100%;
@@ -709,4 +703,33 @@ footer a {
       transform: translateY(-2px); 
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
+}
+
+
+@media (min-width: 769px) {
+
+
+    #navBar a:not(.tracker):not(.dropbtn):not(.dropdown-content a) {
+        text-decoration: none;
+        position: relative;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 50px;      
+        padding: 10px 20px;        
+        color: #4F200D;           
+        background-color: transparent;
+        display: inline-block;     
+    }
+
+
+    #navBar a:not(.tracker):not(.dropbtn):not(.dropdown-content a):hover {
+        transform: translateY(-2px); 
+        background-color: #4F200D;   
+        color: #ffffff;             
+        box-shadow: 0 6px 15px rgba(79, 32, 13, 0.3); 
+    }
+
+    .SignUp {
+        background-color: #4F200D;
+        color: white;
+    }
 }

@@ -23,8 +23,7 @@ $isAdmin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 $logger = new Logger($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // ... (PHP logic unchanged) ...
-    // 1. USER: UPDATE PROFILE
+
     if (isset($_POST['update_profile']) && !$isAdmin) {
         $userObj = new User($conn);
         $res = $userObj->updateProfile(
@@ -41,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 2. USER: REMOVE SAVED ROUTE
     if (isset($_POST['delete_route']) && !$isAdmin) {
         $savedObj = new SavedRoute($conn);
         if ($savedObj->remove($_SESSION['user_id'], $_POST['pickup_id'], $_POST['dropoff_id'])) {
@@ -53,7 +51,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 3. ADMIN: ADD STOP
     if (isset($_POST['add_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         $name = $_POST['stop_name'];
@@ -67,7 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 4. ADMIN: MODIFY STOP
     if (isset($_POST['edit_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         $name = $_POST['stop_name'];
@@ -81,7 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // 5. ADMIN: DELETE STOP
     if (isset($_POST['delete_stop']) && $isAdmin) {
         $stopObj = new BusStop($conn);
         $id = $_POST['stop_id'];
@@ -99,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// --- FETCH DATA ---
 $recent_trip = null;
 $mySavedRoutes = [];
 $stops = [];
@@ -138,14 +132,14 @@ if ($isAdmin) {
     <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        /* --- GLOBAL RESET --- */
+
         * { box-sizing: border-box; }
         body { background-color: #f4f6f8; }
 
-        /* --- DROPDOWN FIX --- */
+
         .dropdown.active .dropdown-content { display: block; }
 
-        /* --- Saved Routes List Styles --- */
+
         .saved-route-item {
             display: flex;
             justify-content: space-between;
@@ -170,7 +164,7 @@ if ($isAdmin) {
         }
         .remove-star-btn:hover { transform: scale(1.2); color: #e65100; }
 
-        /* --- Analytics Styles --- */
+
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -196,7 +190,6 @@ if ($isAdmin) {
         .bar-fill { height: 100%; background: linear-gradient(90deg, #FF9A00, #ffb74d); border-radius: 6px; }
         .bar-val { width: 30px; text-align: right; font-weight: bold; margin-left: 8px; color: #4F200D; }
 
-        /* --- Log Styles --- */
         .log-item {
             border-bottom: 1px solid #f0f0f0; padding: 15px 0;
             display: flex; justify-content: space-between; align-items: flex-start;
@@ -206,7 +199,6 @@ if ($isAdmin) {
         .log-desc { color: #555; font-size: 0.95rem; margin-top: 4px; }
         .log-date { font-size: 0.75rem; color: #999; white-space: nowrap; margin-left: 10px; }
 
-        /* --- Lively Bus Stop Management Styles --- */
         .add-stop-panel {
             background: linear-gradient(135deg, #ffffff 0%, #fff8e1 100%);
             padding: 25px; border-radius: 16px; margin-bottom: 30px;

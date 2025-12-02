@@ -329,7 +329,7 @@ form {
     top: 20px;
     right: 20px;
     padding: 15px 25px;
-    background-color: #f44336; /* red by default */
+    background-color: #f44336;
     color: white;
     font-family: Arial, sans-serif;
     border-radius: 8px;
@@ -340,47 +340,40 @@ form {
     transition: all 0.5s ease;
 }
 
-#popupMessage.success { background-color: #4CAF50; } /* green for success */
-#popupMessage.error { background-color: #f44336; }  /* red for errors */
+#popupMessage.success { background-color: #4CAF50; }
+#popupMessage.error { background-color: #f44336; } 
 #popupMessage.show {
     display: block;
     opacity: 1;
 }
 
-/* ========== IOS FIXES FOR DATE INPUT ========== */
 input[type="date"] {
-    -webkit-appearance: none;  /* Removes native iOS styling */
+    -webkit-appearance: none; 
     appearance: none;
     display: block;
     
-    /* Enforce matching styles */
     background-color: #eee;
     border-radius: 8px;
     border: none;
     outline: none;
     
-    /* Font & Text */
     font-family: 'Outfit', sans-serif;
     font-size: 16px;
     color: #333;
     font-weight: 500;
     
-    /* Sizing - Matches .inputBox input */
     width: 100%;
-    padding: 13px 50px 13px 20px; /* Right padding 50px avoids text hitting the icon */
-    min-height: 45px; /* Ensures decent tap target size */
+    padding: 13px 50px 13px 20px; 
+    min-height: 45px;
 }
 
-/* ========== MOBILE FIXES ========== */
 @media (max-width: 768px) {
-    /* Container adapts to mobile */
     #container {
         width: 90% !important;
         height: auto !important;
         min-height: 500px;
     }
 
-    /* Form box full width, relative */
     .form-box {
         position: relative !important;
         width: 100% !important;
@@ -391,7 +384,6 @@ input[type="date"] {
         z-index: 1;
     }
 
-    /* Toggle box flows below form */
     .toggleBox,
     .toggle-panel,
     .toggle-panel.toggle-left,
@@ -413,30 +405,27 @@ input[type="date"] {
         margin-top: 20px;
     }
 
-    /* Hide yellow background pseudo-element */
     .toggleBox::before {
         display: none !important;
     }
 
-    /* Login button matches register button */
     .toggle-panel .btn {
         width: 100% !important;
         max-width: 250px !important;
-        background-color: #FF9A00 !important; /* same as register button */
-        color: #fff !important;               /* white text */
+        background-color: #FF9A00 !important; 
+        color: #fff !important;               
         text-align: center !important;
         border: none !important;
-        margin: 30 auto !important;            /* center horizontally */
+        margin: 30 auto !important;           
         cursor: pointer;
         transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .toggle-panel .btn:hover {
-        background-color: #e68a00 !important; /* slightly darker on hover */
+        background-color: #e68a00 !important; 
         color: #fff !important;
     }
 
-    /* Center text in toggle panel */
     .toggle-panel h1,
     .toggle-panel p {
         color: #4F200D !important;

@@ -11,7 +11,6 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-/* MOBILE FIX */
 @media (max-width: 768px) {
     body, html {
         width: 100%;
@@ -23,7 +22,7 @@
 
     section {
         display: flex;
-        flex-direction: column; /* stack vertically */
+        flex-direction: column; 
         align-items: center;
         justify-content: flex-start;
         width: 100%;
@@ -134,14 +133,13 @@
         opacity: 0.7;
     }
 
-    /* LOGIN PANEL FIXED BELOW FORM */
     .toggleBox,
     .toggleBox .toggle-panel {
-        position: static !important; /* override absolute/fixed */
+        position: static !important; 
         transform: none !important;
         width: 100% !important;
         max-width: none !important;
-        background: transparent !important; /* remove yellow */
+        background: transparent !important;
         margin-top: 20px;
         padding: 0;
         text-align: center;
@@ -227,7 +225,6 @@
                     <i class="fa-solid fa-lock"></i>
                 </div>
                 
-                <!-- ADDED CONFIRM PASSWORD FIELD -->
                 <div class="inputBox">
                     <input type="password" name="confirm_password" placeholder="Confirm Password" required>
                     <i class="fa-solid fa-lock"></i>
@@ -237,7 +234,6 @@
                 </form>
         </div>
 
-        <!-- LOGIN PANEL BELOW FORM -->
         <div class="toggleBox">
             <div class="toggle-panel toggle-left">
                 <h1>Hello, Welcome!</h1>
@@ -257,37 +253,32 @@ document.body.appendChild(popup);
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Helper Function for showing errors
     function showError(message) {
         popup.textContent = message;
         popup.className = '';
-        popup.classList.add('error', 'show'); // Default is red
+        popup.classList.add('error', 'show'); 
         setTimeout(() => {
             popup.classList.remove('show');
         }, 3000);
     }
 
-    // --- 1. BIRTHDATE CHECK ---
     const birthdateInput = form.querySelector('input[name="birthdate"]').value;
     if (birthdateInput) {
         const birthDate = new Date(birthdateInput);
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // Reset time for cleaner comparison
+        today.setHours(0, 0, 0, 0); 
 
-        // Check 1: Future Date
         if (birthDate > today) {
             showError("Birthdate cannot be in the future!");
             return;
         }
 
-        // Check 2: Unreasonably Old (Before 1900)
         const minDate = new Date('1900-01-01');
         if (birthDate < minDate) {
             showError("Please enter a valid birth year (after 1900).");
             return;
         }
 
-        // Check 3: Minimum Age (e.g., 5 years old)
         let age = today.getFullYear() - birthDate.getFullYear();
         const m = today.getMonth() - birthDate.getMonth();
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
@@ -300,7 +291,6 @@ form.addEventListener('submit', async (e) => {
         }
     }
 
-    // --- 2. PASSWORD CHECK ---
     const password = form.querySelector('input[name="password"]').value;
     const confirmPassword = form.querySelector('input[name="confirm_password"]').value;
 
@@ -309,7 +299,6 @@ form.addEventListener('submit', async (e) => {
         return; 
     }
 
-    // --- 3. SUBMIT ---
     const formData = new FormData(form);
     const response = await fetch('register.php', { method: 'POST', body: formData });
     const data = await response.json();

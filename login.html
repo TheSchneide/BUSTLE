@@ -52,7 +52,6 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=DM+Serif+Display:ital@0;1&family=Outfit:wght@200&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
 
-/* MOBILE FIX */
 @media (max-width: 768px) {
     body, html {
         width: 100%;
@@ -64,7 +63,7 @@
 
     section {
         display: flex;
-        flex-direction: column; /* stack vertically */
+        flex-direction: column; 
         align-items: center;
         justify-content: flex-start;
         width: 100%;
@@ -175,14 +174,13 @@
         opacity: 0.7;
     }
 
-    /* LOGIN PANEL FIXED BELOW FORM */
     .toggleBox,
     .toggleBox .toggle-panel {
-        position: static !important; /* override absolute/fixed */
+        position: static !important; 
         transform: none !important;
         width: 100% !important;
         max-width: none !important;
-        background: transparent !important; /* remove yellow */
+        background: transparent !important;
         margin-top: 20px;
         padding: 0;
         text-align: center;
@@ -235,15 +233,12 @@
 </style>
 
 <script>
-// Get the form
 const form = document.querySelector('form[action="login.php"]');
 
-// Create popup container
 const popup = document.createElement('div');
 popup.id = 'popupMessage';
 document.body.appendChild(popup);
 
-// CSS for popup
 const style = document.createElement('style');
 style.textContent = `
 #popupMessage {
@@ -266,25 +261,21 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Handle login form via AJAX
 form.addEventListener('submit', async (e) => {
-    e.preventDefault(); // prevent page reload
+    e.preventDefault(); 
 
     const formData = new FormData(form);
 
     const res = await fetch('login.php', { method: 'POST', body: formData });
     const data = await res.json();
 
-    // Show popup
     popup.textContent = data.message;
     popup.className = '';
     popup.classList.add(data.status, 'show');
 
-    // Hide popup after 3 seconds
     setTimeout(() => {
         popup.classList.remove('show');
 
-        // Redirect after success
         if (data.status === 'success') {
             window.location.href = 'index.php';
         }

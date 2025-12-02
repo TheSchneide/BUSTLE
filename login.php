@@ -10,11 +10,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST['username']);
     $password = $_POST['password'];
 
-    // --- 1. HARDCODED ADMIN CHECK ---
+
     if ($username === 'bustleAdmin' && $password === '321') {
-        $_SESSION['user_id'] = 999999; // Arbitrary ID for admin
+        $_SESSION['user_id'] = 999999; 
         $_SESSION['username'] = 'Admin';
-        $_SESSION['is_admin'] = true; // Set Admin Flag
+        $_SESSION['is_admin'] = true; 
         
         $response['status'] = 'success';
         $response['message'] = 'Welcome, Admin!';
@@ -22,7 +22,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // --- 2. REGULAR USER CHECK ---
     $db = new Database();
     $user = new User($db->getConnection());
 
@@ -32,11 +31,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $userData = $loginResult['user'];
         $_SESSION['user_id'] = $userData['user_id'];
         $_SESSION['username'] = $userData['username'];
-        $_SESSION['email'] = $userData['email']; // Store email for profile confirmation
-        $_SESSION['birthdate'] = $userData['birthdate']; // Store bday for profile
+        $_SESSION['email'] = $userData['email']; 
+        $_SESSION['birthdate'] = $userData['birthdate']; 
         $_SESSION['is_admin'] = false;
 
-        // --- AGE CALCULATION LOGIC ---
         $birthDate = new DateTime($userData['birthdate']);
         $today = new DateTime();
         $age = $today->diff($birthDate)->y;

@@ -4,7 +4,6 @@ include_once 'Savable.php';
 
 class SavedRoute extends BaseModel implements Savable {
     
-    // Save a specific route (Ignore if already exists)
     public function save($user_id, $pickup_id, $dropoff_id, $fare = null) {
         $sql = "INSERT IGNORE INTO saved_routes (user_id, pickup_stop_id, dropoff_stop_id) 
                 VALUES (?, ?, ?)";
@@ -14,16 +13,13 @@ class SavedRoute extends BaseModel implements Savable {
         return $stmt->execute();
     }
 
-    // Remove a SPECIFIC route
     public function remove($user_id, $pickup_id = null, $dropoff_id = null) {
-        // If IDs provided, delete specific. If null, delete all (optional safety)
         $sql = "DELETE FROM saved_routes WHERE user_id = ? AND pickup_stop_id = ? AND dropoff_stop_id = ?";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("iii", $user_id, $pickup_id, $dropoff_id);
         return $stmt->execute();
     }
 
-    // Get ALL saved routes for a user
     public function getAll($user_id) {
         $sql = "SELECT 
                 s.pickup_stop_id, s.dropoff_stop_id,
@@ -33,7 +29,7 @@ class SavedRoute extends BaseModel implements Savable {
              JOIN bus_stops p ON s.pickup_stop_id = p.stop_id
              JOIN bus_stops d ON s.dropoff_stop_id = d.stop_id
              WHERE s.user_id = ?
-             ORDER BY s.save_id DESC"; // Newest first
+             ORDER BY s.save_id DESC"; 
     
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("i", $user_id);

@@ -32,16 +32,16 @@ if ($isLoggedIn) {
         
         $topRoutes = $analytics->getTopSavedRoutes();
         
-        // --- UPDATED LOGIC HERE ---
+
         if (!empty($topRoutes)) {
             $adminStats['top_route_count'] = $topRoutes[0]['count'];
-            // Create a string like "IT Park ➝ Mactan Newtown"
+
             $adminStats['top_route_desc'] = htmlspecialchars($topRoutes[0]['pickup']) . " <span style='color:#FF9A00'>➝</span> " . htmlspecialchars($topRoutes[0]['dropoff']);
         } else {
             $adminStats['top_route_count'] = 0;
             $adminStats['top_route_desc'] = "No saved routes yet";
         }
-        // --------------------------
+
         
         $allLogs = $logger->getLogs();
         $recentLogs = array_slice($allLogs, 0, 3);
@@ -69,7 +69,7 @@ if ($isLoggedIn) {
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
-    /* --- ADMIN DASHBOARD STYLES --- */
+
     .admin-dashboard {
         width: 90%;
         max-width: 1000px;
@@ -191,7 +191,7 @@ if ($isLoggedIn) {
 
     .qa-btn:hover { background: #333; color: white; }
     
-    /* --- EXISTING STYLES REUSED --- */
+
     .menu-toggle {
       display: none;
       flex-direction: column;
@@ -280,17 +280,16 @@ if ($isLoggedIn) {
       footer { flex-direction: column; gap: 8px; padding: 15px 0; }
     }
 
-    /* --- NEW USER DASHBOARD STYLES --- */
+
     .user-dashboard {
         width: 100%;
         max-width: 1100px;
         margin: 20px auto;
-        padding: 0 15px; /* Slightly reduced padding */
+        padding: 0 15px; 
         text-align: left;
-        box-sizing: border-box; /* PREVENTS OVERFLOW */
+        box-sizing: border-box; 
     }
 
-    /* Apply border-box to all dashboard elements to prevent size errors */
     .user-dashboard * {
         box-sizing: border-box;
     }
@@ -322,17 +321,17 @@ if ($isLoggedIn) {
 
     .dashboard-grid-user {
         display: grid;
-        /* Changed 300px to 280px to fit smaller phones */
+
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
         gap: 20px;
         margin-bottom: 40px;
-        width: 100%; /* Ensure it stays within parent */
+        width: 100%; 
     }
 
     .action-card {
         background: white;
         border-radius: 20px;
-        padding: 25px; /* Slightly reduced for mobile fit */
+        padding: 25px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         border: 1px solid #eee;
         transition: all 0.3s ease;
@@ -394,7 +393,6 @@ if ($isLoggedIn) {
         gap: 8px;
     }
 
-    /* Saved Routes Section */
     .saved-routes-section h3 {
         font-family: 'Outfit', sans-serif;
         color: #4F200D;
@@ -427,7 +425,7 @@ if ($isLoggedIn) {
         top: 50%;
         width: 20px;
         height: 20px;
-        background-color: #f4f6f8; /* Matches body bg if needed */
+        background-color: #f4f6f8; 
         border-radius: 50%;
         transform: translateY(-50%);
     }
@@ -455,11 +453,11 @@ if ($isLoggedIn) {
             padding-left: 0 !important;
             padding-right: 0 !important;
             width: 100% !important;
-            overflow-x: hidden; /* Hide any accidental scroll */
+            overflow-x: hidden;
         }
         
         .user-dashboard {
-            width: 95%; /* Leave a tiny gap on edges */
+            width: 95%;
             margin: 10px auto;
         }
         .welcome-header h1 { font-size: 2.2rem; }
@@ -479,15 +477,14 @@ if ($isLoggedIn) {
         transition: 0.4s ease;
         box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         z-index: 9999;
-        padding: 0; /* Remove container padding */
-        gap: 0;     /* Remove flex gap, use item padding instead */
+        padding: 0; 
+        gap: 0;     
       }
 
       #navBar.active {
         max-height: 500px;
       }
 
-      /* 1. Make direct links (Home, Calculator) look exactly like dropdown items */
       #navBar > a {
         display: block;
         width: 100%;
@@ -497,7 +494,6 @@ if ($isLoggedIn) {
         font-weight: 700;
       }
 
-      /* 2. Flatten the Dropdown Container */
       .dropdown {
         width: 100%;
         display: block;
@@ -506,18 +502,17 @@ if ($isLoggedIn) {
       }
 
       .dropbtn {
-        display: none !important; /* Hide the User Button */
+        display: none !important; 
       }
 
       .dropdown-content {
-        display: block !important; /* Force show content */
+        display: block !important; 
         position: static;
         width: 100%;
         background: transparent;
         box-shadow: none;
       }
 
-      /* 3. Ensure dropdown links match the direct links */
       .dropdown-content a {
         display: block;
         width: 100%;

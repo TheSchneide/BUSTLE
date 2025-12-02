@@ -198,13 +198,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 document.querySelectorAll('.dropdown.active').forEach(d => d.classList.remove('active'));
             }
         });
-
-        // ... Rest of Tracker JS logic omitted for brevity as it is unchanged ...
-        // Re-paste the original JS logic here if you need the full file to be complete
-        // For the sake of the prompt's token limit, I assume you have the JS logic.
-        // If you need the full Tracker.php with JS re-pasted, let me know.
-        
-        // RE-INCLUDING JS BLOCK TO ENSURE FILE INTEGRITY:
         const STUDENT_BASE_FARE = 13.00;
         const STUDENT_BASE_DIST = 7.4;
         const STUDENT_EXCESS_RATE = 2.56;
@@ -432,7 +425,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const isStudent = IS_DISCOUNTED;
             let billableDistance = distKm;
             
-            // Logic for IT Park billable distance deduction
             if (startName === "IT Park" || endName === "IT Park") {
                 billableDistance = Math.max(0, distKm - 0.6); 
             }
@@ -525,32 +517,26 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             const dIDVal = parseInt(stops[dIndex].id);
             let customRoute = false;
 
-            // --- 1. NEW: Logic for ID 49 (Only goes to 24-31) ---
             if (pIDVal == 49) {
                 if (dIDVal >= 24 && dIDVal <= 31) {
                     const stop49 = stops.filter(s => parseInt(s.id) == 49);
-                    // Get dests sorted 24 -> 31
                     const dests = stops.filter(s => { const sid = parseInt(s.id); return sid >= 24 && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                     routeStops = stop49.concat(dests);
                     customRoute = true;
                 }
             }
-            // --- 2. NEW: Logic for ID 52 (Only goes to 18 down to 1) ---
             else if (pIDVal == 52) {
                 if (dIDVal <= 18 && dIDVal >= 1) {
                     const stop52 = stops.filter(s => parseInt(s.id) == 52);
-                    // Get dests sorted 18 -> 1 (Descending)
                     const dests = stops.filter(s => { const sid = parseInt(s.id); return sid <= 18 && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                     routeStops = stop52.concat(dests);
                     customRoute = true;
                 }
             }
-            // --- 3. NEW: Logic for 18-30 going UP to 31 ---
             else if (pIDVal >= 18 && pIDVal <= 30 && dIDVal > pIDVal && dIDVal <= 31) {
                  routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid >= pIDVal && sid <= dIDVal; }).sort((a, b) => parseInt(a.id) - parseInt(b.id));
                  customRoute = true;
             }
-            // --- 4. Existing Logic for 24-31 going to 52 or 1-18 (Loop Back) ---
             else if (pIDVal >= 24 && pIDVal <= 31 && (dIDVal == 52 || dIDVal <= 18)) {
                 const part1 = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= 24; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 const part2 = stops.filter(s => parseInt(s.id) == 52);
@@ -561,14 +547,11 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 routeStops = part1.concat(part2).concat(part3);
                 customRoute = true;
             }
-            // --- 5. Existing Logic for 2-31 going backwards ---
             else if (pIDVal >= 2 && pIDVal <= 31 && dIDVal < pIDVal) {
                 routeStops = stops.filter(s => { const sid = parseInt(s.id); return sid <= pIDVal && sid >= dIDVal; }).sort((a, b) => parseInt(b.id) - parseInt(a.id));
                 customRoute = true;
             }
-            // --- 6. Existing General Logic for the rest (Handle with care) ---
             else if (pIDVal == 1 || pIDVal >= 32) {
-                // Note: 49 and 52 are caught above, so they won't trigger this unless they failed the specific checks above
                 
                 if (dIDVal >= 24 && dIDVal <= 31) {
                     let part1 = [];
@@ -601,16 +584,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
 
             if (!customRoute) {
-                // --- STRICT ROUTE VALIDATION UPDATED ---
-                // Block if:
-                // 1. Pickup is 2-31 (unless it was a valid custom route above)
-                // 2. Pickup is 1 AND Dropoff is 2-17
-                // 3. Pickup is 49 (If it failed the check above, it's invalid)
-                // 4. Pickup is 52 (If it failed the check above, it's invalid)
-                
                 if ((pIDVal >= 2 && pIDVal <= 31) || (pIDVal == 1 && dIDVal <= 17) || pIDVal == 49 || pIDVal == 52) {
-                    
-                    // Show Error UI
                     sheetTitle.innerHTML = `<span style="color: #d32f2f; font-size: 1.2rem;">Invalid Route</span>`;
                     
                     resultDisplay.innerHTML = `
@@ -633,8 +607,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     currentRouteLayers = [];
                     return;
                 }
-                
-                // Linear Fallback
                 if (pIndex < dIndex) { 
                     routeStops = stops.slice(pIndex, dIndex + 1); 
                 } else { 
@@ -975,8 +947,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         function findNearestStop(lat, lng, type, placeName) {
             let nearestIndex = -1;
             let minDistance = Infinity;
-
-            // Loop through all stops to find the closest one
             stops.forEach((stop, index) => {
                 const dist = map.distance([lat, lng], [stop.lat, stop.lng]);
                 if (dist < minDistance) {
@@ -990,20 +960,15 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 const input = document.getElementById(type + 'Input');
                 const msg = document.getElementById(type + 'Msg');
                 
-                // Set the dropdown to the nearest stop
                 selectBox.value = nearestIndex;
                 
-                // Keep the location name the user searched for
                 input.value = placeName || stops[nearestIndex].name;
                 
-                // Show a message about how far the actual stop is
                 msg.innerText = `Nearest stop: ${stops[nearestIndex].name} (~${Math.round(minDistance)}m away)`;
                 
-                // Add a temporary marker for the search result
                 if (searchMarkers[type]) map.removeLayer(searchMarkers[type]);
                 searchMarkers[type] = L.marker([lat, lng]).addTo(map).bindPopup(placeName).openPopup();
                 
-                // Center map and calculate
                 map.setView([lat, lng], 15);
                 calculateFare();
             }

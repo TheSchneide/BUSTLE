@@ -1,6 +1,4 @@
-/* Keyframes for the entry animations */
 
-/* Fade In Up: Elements start slightly lower and transparent, then slide up and fade in */
 @keyframes fadeInUp {
     0% {
         opacity: 0;
@@ -13,7 +11,6 @@
     }
 }
 
-/* Fade In Scale: Elements start smaller and transparent, then scale up */
 @keyframes fadeInScale {
     0% {
         opacity: 0;
@@ -26,15 +23,11 @@
     }
 }
 
-/* Base class for animated elements */
 .anim-enter {
     opacity: 0;
-    /* Start hidden */
     animation-fill-mode: forwards;
-    /* Keep state after animation */
 }
 
-/* Specific Animation Types */
 .slide-up {
     animation-name: fadeInUp;
     animation-duration: 0.6s;
@@ -47,7 +40,6 @@
     animation-timing-function: ease-out;
 }
 
-/* Staggered Delays for sequential appearance */
 .delay-1 {
     animation-delay: 0.1s;
 }

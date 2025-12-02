@@ -6,7 +6,6 @@ class Analytics {
         $this->conn = $db;
     }
 
-    // 1. Most Saved Routes (Top 5)
     public function getTopSavedRoutes() {
         $sql = "SELECT 
                     p.stop_name as pickup, 
@@ -20,8 +19,6 @@ class Analytics {
                 LIMIT 5";
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
-
-    // 2. Most Frequently Calculated Routes (Based on recent user activity)
     public function getFrequentTrips() {
         $sql = "SELECT 
                     p.stop_name as pickup, 
@@ -36,7 +33,6 @@ class Analytics {
         return $this->conn->query($sql)->fetch_all(MYSQLI_ASSOC);
     }
 
-    // 3. User Demographics (Age Ranges)
     public function getUserDemographics() {
         $sql = "SELECT birthdate FROM users";
         $result = $this->conn->query($sql);

@@ -9,7 +9,6 @@ class User {
     public function register($username, $email, $password, $birthdate) {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-        // Check duplicates
         $check = $this->conn->prepare("SELECT * FROM users WHERE email = ? OR username = ?");
         $check->bind_param("ss", $email, $username);
         $check->execute();
@@ -49,9 +48,7 @@ class User {
         return $response;
     }
 
-    // --- NEW: For Profile Update ---
     public function updateProfile($userId, $confirmEmail, $confirmPass, $newUsername, $newPassword = null) {
-        // 1. Verify Identity
         $stmt = $this->conn->prepare("SELECT password, email FROM users WHERE user_id = ?");
         $stmt->bind_param("i", $userId);
         $stmt->execute();
@@ -62,14 +59,11 @@ class User {
             return ['status' => 'error', 'message' => 'Verification failed. Incorrect Email or Password.'];
         }
 
-        // 2. Update Data
         if (!empty($newPassword)) {
-            // Update Username AND Password
             $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
             $update = $this->conn->prepare("UPDATE users SET username = ?, password = ? WHERE user_id = ?");
             $update->bind_param("ssi", $newUsername, $newHash, $userId);
         } else {
-            // Update Username ONLY
             $update = $this->conn->prepare("UPDATE users SET username = ? WHERE user_id = ?");
             $update->bind_param("si", $newUsername, $userId);
         }
@@ -81,7 +75,6 @@ class User {
         }
     }
 
-    // --- NEW: For Admin View ---
     public function getAllUsers() {
         $result = $this->conn->query("SELECT user_id, username, email, birthdate FROM users");
         $users = [];

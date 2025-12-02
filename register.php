@@ -12,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         trim($_POST['username']),
         trim($_POST['email']),
         $_POST['password'],
-        $_POST['birthdate'] // NEW INPUT
+        $_POST['birthdate'] 
     );
     
     echo json_encode($response);
