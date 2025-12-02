@@ -23,7 +23,7 @@ $isAdmin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 $logger = new Logger($conn);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+    // ... (PHP logic unchanged) ...
     // 1. USER: UPDATE PROFILE
     if (isset($_POST['update_profile']) && !$isAdmin) {
         $userObj = new User($conn);
@@ -138,11 +138,12 @@ if ($isAdmin) {
     <link rel="stylesheet" href="profile_animation.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        /* --- GLOBAL RESET FOR LAYOUT SAFETY --- */
+        /* --- GLOBAL RESET --- */
         * { box-sizing: border-box; }
-
-        /* --- General Layout --- */
         body { background-color: #f4f6f8; }
+
+        /* --- DROPDOWN FIX --- */
+        .dropdown.active .dropdown-content { display: block; }
 
         /* --- Saved Routes List Styles --- */
         .saved-route-item {
@@ -160,29 +161,16 @@ if ($isAdmin) {
             transform: translateX(5px);
             border-color: #FF9A00;
         }
-        .route-names {
-            font-weight: bold;
-            color: #4F200D;
-        }
-        .route-arrow {
-            color: #FF9A00;
-            margin: 0 8px;
-        }
+        .route-names { font-weight: bold; color: #4F200D; }
+        .route-arrow { color: #FF9A00; margin: 0 8px; }
         .remove-star-btn {
-            background: none;
-            border: none;
-            color: #FF9A00;
-            font-size: 1.2rem;
-            cursor: pointer;
-            padding: 5px;
+            background: none; border: none; color: #FF9A00;
+            font-size: 1.2rem; cursor: pointer; padding: 5px;
             transition: transform 0.2s, color 0.2s;
         }
-        .remove-star-btn:hover {
-            transform: scale(1.2);
-            color: #e65100;
-        }
+        .remove-star-btn:hover { transform: scale(1.2); color: #e65100; }
 
-        /* --- Analytics Styles (FIXED FOR MOBILE) --- */
+        /* --- Analytics Styles --- */
         .stat-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -190,29 +178,16 @@ if ($isAdmin) {
             margin-bottom: 30px;
         }
         .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 20px;
-            border-left: 6px solid #FF9A00;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-width: 0; 
+            background: white; padding: 25px; border-radius: 20px;
+            border-left: 6px solid #FF9A00; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; overflow: hidden; min-width: 0; 
         }
         .stat-card h4 { 
-            margin-top: 0; 
-            color: #4F200D; 
-            font-size: 1.1rem; 
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-top: 0; color: #4F200D; font-size: 1.1rem; 
+            border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;
         }
         .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            display: block; 
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; 
         }
         .bar-container { margin-top: 10px; }
         .bar-row { display: flex; align-items: center; margin-bottom: 12px; font-size: 0.9rem; }
@@ -223,11 +198,8 @@ if ($isAdmin) {
 
         /* --- Log Styles --- */
         .log-item {
-            border-bottom: 1px solid #f0f0f0;
-            padding: 15px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            border-bottom: 1px solid #f0f0f0; padding: 15px 0;
+            display: flex; justify-content: space-between; align-items: flex-start;
         }
         .log-item:last-child { border-bottom: none; }
         .log-action { font-weight: 800; color: #4F200D; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -237,21 +209,13 @@ if ($isAdmin) {
         /* --- Lively Bus Stop Management Styles --- */
         .add-stop-panel {
             background: linear-gradient(135deg, #ffffff 0%, #fff8e1 100%);
-            padding: 25px;
-            border-radius: 16px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-            border: 1px solid #ffe0b2;
-            position: relative;
-            overflow: hidden;
+            padding: 25px; border-radius: 16px; margin-bottom: 30px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05); border: 1px solid #ffe0b2;
+            position: relative; overflow: hidden;
         }
         .add-stop-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; right: 0;
-            width: 100px; height: 100px;
-            background: #FF9A00;
-            opacity: 0.1;
+            content: ''; position: absolute; top: 0; right: 0;
+            width: 100px; height: 100px; background: #FF9A00; opacity: 0.1;
             border-radius: 0 0 0 100%;
         }
         .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -261,90 +225,52 @@ if ($isAdmin) {
         .modern-input-group { position: relative; flex: 1; min-width: 200px; }
         .modern-input-group i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #FF9A00; }
         .modern-input {
-            width: 100%;
-            padding: 12px 15px 12px 40px;
-            border: 2px solid #eee;
-            border-radius: 50px;
-            font-family: 'Outfit', sans-serif;
-            transition: all 0.3s;
-            outline: none;
+            width: 100%; padding: 12px 15px 12px 40px; border: 2px solid #eee;
+            border-radius: 50px; font-family: 'Outfit', sans-serif; transition: all 0.3s; outline: none;
         }
         .modern-input:focus { border-color: #FF9A00; box-shadow: 0 4px 10px rgba(255,154,0,0.1); }
         .btn-add {
-            background: #4F200D;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            background: #4F200D; color: white; border: none; padding: 12px 30px;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             transition: transform 0.2s;
         }
         .btn-add:hover { transform: translateY(-2px); background: #333; }
 
         .search-bar-container {
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;
         }
         .stop-count-badge {
             background: #FF9A00; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
         }
 
         .lively-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
+            width: 100%; border-collapse: separate; border-spacing: 0 8px;
         }
         .lively-table thead th {
-            text-align: left;
-            padding: 15px;
-            color: #888;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            text-align: left; padding: 15px; color: #888; font-size: 0.85rem;
+            text-transform: uppercase; letter-spacing: 1px;
         }
         .lively-table tbody tr {
-            background: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
             transition: transform 0.2s, box-shadow 0.2s;
         }
         .lively-table tbody tr:hover {
-            transform: translateY(-2px); 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            z-index: 10;
-            position: relative;
+            transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            z-index: 10; position: relative;
         }
         .lively-table td {
-            padding: 15px;
-            vertical-align: middle;
-            border-top: 1px solid #f9f9f9;
-            border-bottom: 1px solid #f9f9f9;
+            padding: 15px; vertical-align: middle; border-top: 1px solid #f9f9f9; border-bottom: 1px solid #f9f9f9;
         }
         .lively-table td:first-child { border-top-left-radius: 10px; border-bottom-left-radius: 10px; border-left: 1px solid #f9f9f9; }
         .lively-table td:last-child { border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid #f9f9f9; }
 
         .coord-badge {
-            background: #eee;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.8rem;
-            color: #555;
+            background: #eee; padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 0.8rem; color: #555;
         }
         .action-icon-btn {
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            font-size: 1.1rem;
-            padding: 8px;
-            border-radius: 50%;
-            transition: background 0.2s;
+            border: none; background: transparent; cursor: pointer; font-size: 1.1rem;
+            padding: 8px; border-radius: 50%; transition: background 0.2s;
         }
         .action-icon-btn.edit { color: #2196F3; }
         .action-icon-btn.edit:hover { background: rgba(33, 150, 243, 0.1); }
@@ -352,9 +278,7 @@ if ($isAdmin) {
         .action-icon-btn.delete:hover { background: rgba(244, 67, 54, 0.1); }
         .action-icon-btn.save { color: #4CAF50; display: none; }
         
-        /* Edit Mode Styles */
         .editable-group { display: none; flex-direction: column; gap: 5px; }
-        
         tr.editing .editable-group { display: flex; }
         tr.editing .editable-input-field { 
             border: 1px solid #ccc; background: white; padding: 5px; border-radius: 4px; width: 100%; box-sizing: border-box;
@@ -364,7 +288,6 @@ if ($isAdmin) {
         tr.editing .action-icon-btn.edit { display: none; }
         tr.editing .action-icon-btn.save { display: inline-block; }
 
-
         @media (max-width: 768px) {
             .menu-toggle { display: flex; }
             #navBar {
@@ -373,16 +296,11 @@ if ($isAdmin) {
                 transition: 0.4s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 9999; padding: 0;
             }
             #navBar.active { max-height: 400px; padding: 20px 0; }
-            
             .tab-nav { flex-wrap: wrap; justify-content: center; }
             .tab-btn { margin-bottom: 5px; flex: 1 1 40%; text-align: center; }
-            
             .modern-form { flex-direction: column; }
-            
             .modern-input-group { width: 100%; margin-bottom: 15px; } 
             .btn-add { width: 100%; }
-            
-            /* FORCE SINGLE COLUMN FOR ANALYTICS ON MOBILE */
             .stat-grid { grid-template-columns: 1fr; }
         }
     </style>

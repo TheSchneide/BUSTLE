@@ -464,12 +464,6 @@ if ($isLoggedIn) {
       navBar.classList.toggle('active');
     });
 
-    document.querySelectorAll('.dropdown').forEach(d => {
-        d.addEventListener('click', () => {
-            d.classList.toggle('active');
-        });
-    });
-
     document.addEventListener("DOMContentLoaded", () => {
       const observer = new IntersectionObserver(entries => {
         entries.forEach(entry => {
