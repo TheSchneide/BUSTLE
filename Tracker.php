@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+$isAdmin = isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
 $isDiscounted = isset($_SESSION['is_discounted']) && $_SESSION['is_discounted'] === true;
 $discountLabel = isset($_SESSION['discount_type']) ? $_SESSION['discount_type'] : "Regular";
 
@@ -66,7 +67,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         <button class="rush-close" onclick="closeRushBanner()">✕</button>
     </div>
 
-    <!-- NEW: WALK INFO MODAL -->
     <div id="walkInfo" class="walk-info-modal" style="display:none;">
         <div class="walk-info-title">Nearest Stop</div>
         <div class="walk-info-value" id="walkTime">-- min</div>
@@ -93,7 +93,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 <a href="index.php">Bustle</a>
             </div>
 
-            <!-- ADDED HAMBURGER MENU -->
             <div class="menu-toggle" id="menu-toggle">
                 <span></span>
                 <span></span>
@@ -111,7 +110,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                         <i class="fa-solid fa-caret-down"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="Profile.php">Profile</a>
+                        <a href="Profile.php"><?php echo $isAdmin ? 'Dashboard' : 'Profile'; ?></a>
                         <a href="logout.php">Logout</a>
                     </div>
                 </div>
@@ -224,6 +223,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             }
         });
 
+        // ... Rest of Tracker JS logic omitted for brevity as it is unchanged ...
+        // Re-paste the original JS logic here if you need the full file to be complete
+        // For the sake of the prompt's token limit, I assume you have the JS logic.
+        // If you need the full Tracker.php with JS re-pasted, let me know.
+        
+        // RE-INCLUDING JS BLOCK TO ENSURE FILE INTEGRITY:
         const STUDENT_BASE_FARE = 13.00;
         const STUDENT_BASE_DIST = 7.4;
         const STUDENT_EXCESS_RATE = 2.56;
@@ -232,12 +237,10 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         const IS_DISCOUNTED = <?php echo $isDiscounted ? 'true' : 'false'; ?>;
         const USER_SAVED_ROUTES = <?php echo json_encode($mySavedRoutes); ?>;
 
-        // --- MAP INIT (Zoom control moved to top-right) ---
         const map = L.map('map', { zoomControl: false }).setView([10.32853, 123.9089], 13);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // RESET HIGHLIGHT ON MAP CLICK
         map.on('click', () => {
             resetHighlights();
         });
@@ -245,7 +248,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
         let stops = [];
         let stopMarkers = []; 
         let currentRouteLayers = []; 
-        let walkLineLayer = null; // Stores the orange walking line
+        let walkLineLayer = null;
 
         const pickupSelect = document.getElementById('pickupSelect');
         const destSelect = document.getElementById('destSelect');
@@ -283,7 +286,7 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                     lng: parseFloat(item.longitude)
                 }));
                 initializeMapMarkers();
-                highlightKeyStops(); // Highlight specific stops on load
+                highlightKeyStops();
                 populateDropdowns();
                 checkUrlParams();
             } catch (error) { console.error('Error loading stops:', error); }
@@ -293,29 +296,24 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             stops.forEach((stop, index) => {
                 const marker = L.circleMarker([stop.lat, stop.lng], { color: 'green', radius: 4 }).addTo(map);
                 marker.stopId = stop.id; 
-                marker.stopName = stop.name; // For referencing
+                marker.stopName = stop.name;
                 marker.on('click', function(e) {
                     if (pickingMode) {
                         showStopConfirmation(index);
                         L.DomEvent.stopPropagation(e);
                     } else {
-                        // Reset highlights on click too
                         resetHighlights();
                         this.bindPopup(`<b>${stop.name}</b>`).openPopup();
                     }
                 });
-                // Attach name to popup for default behavior
                 marker.bindPopup(`<b>${stop.name}</b>`);
                 stopMarkers.push(marker); 
             });
         }
 
-        // --- HIGHLIGHT FEATURE (UPDATED TO USE ID) ---
         function highlightKeyStops() {
-            // Need small timeout to ensure markers are ready
             setTimeout(() => {
                 stopMarkers.forEach(marker => {
-                    // Check for ID 1 (IT Park) or 31 (Mactan Newtown)
                     if(marker.stopId == 1 || marker.stopId == 31) {
                         marker.openPopup();
                     }
@@ -381,10 +379,8 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             openSheet();
         }
 
-        // --- UPDATED LOCATE USER FOR REAL-TIME WALK INFO ---
         function locateUser() {
             if (navigator.geolocation) {
-                // Use watchPosition for updates
                 navigator.geolocation.watchPosition(
                     (position) => {
                         userLat = position.coords.latitude;
@@ -425,14 +421,13 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             });
 
             if(nearestStop) {
-                const walkTimeMin = Math.round(minDist / 83); // Approx 83m per min (5km/h)
+                const walkTimeMin = Math.round(minDist / 83);
                 
                 document.getElementById('walkInfo').style.display = 'flex';
                 document.getElementById('walkTime').innerText = (walkTimeMin < 1 ? "< 1" : walkTimeMin) + " min";
                 document.getElementById('walkDist').innerText = Math.round(minDist) + " m";
                 document.getElementById('nearestStopName').innerText = "to " + nearestStop.name;
 
-                // --- DRAW ORANGE DOTTED LINE ---
                 if (walkLineLayer) {
                     map.removeLayer(walkLineLayer);
                 }
@@ -452,8 +447,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             if (userLat && userLng) {
                 map.flyTo([userLat, userLng], 15);
             } else {
-                // Just trigger logic, let watchPosition handle update
-                // But if first time, maybe timeout
                 setTimeout(() => { if(userLat) map.flyTo([userLat, userLng], 15); }, 1000);
             }
         }
@@ -533,7 +526,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
             resultDisplay.innerHTML = `Calculating...`;
             sheetTitle.innerText = "BUS";
 
-            // --- 1. DETERMINE ROUTE STOPS ---
             let routeStops = [];
             const pIDVal = parseInt(stops[pIndex].id);
             const dIDVal = parseInt(stops[dIndex].id);
@@ -589,7 +581,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 else { routeStops = stops.slice(dIndex, pIndex + 1).reverse(); }
             }
 
-            // --- 2. HIDE LOGIC ---
             resetMarkerVisibility();
             if (pIDVal >= 24 && pIDVal <= 31) {
                 const marker49 = stopMarkers.find(m => m.stopId == 49);
@@ -599,14 +590,12 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                 if (marker52) map.removeLayer(marker52);
             }
 
-            // --- 3. OPTIMIZED FETCHING (Group segments by color) ---
             try {
                 let totalDistKm = 0;
                 const requests = [];
                 const rush = isRushHour();
 
                 if (routeStops.length > 1) {
-                    // Initialize first batch
                     let p1 = routeStops[0];
                     let p2 = routeStops[1];
                     let initialColor = rush && isSegmentRed(parseInt(p1.id), parseInt(p2.id)) ? 'red' : 'green';
@@ -622,27 +611,21 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
                         let segColor = rush && isSegmentRed(parseInt(p1.id), parseInt(p2.id)) ? 'red' : 'green';
 
                         if (segColor === currentBatch.color) {
-                            // If color matches, append the NEXT stop (p2) to the current batch
-                            // Note: p1 is already the last stop of the previous segment
                             currentBatch.stops.push(p2);
                         } else {
-                            // Color changed: close current batch and start new
                             requests.push(fetchBatch(currentBatch));
                             currentBatch = { color: segColor, stops: [p1, p2] };
                         }
                     }
-                    // Push last batch
                     requests.push(fetchBatch(currentBatch));
                 }
 
-                // Helper: Fetch a single batch
                 async function fetchBatch(batch) {
                     let coordList = [];
                     for(let i=0; i < batch.stops.length; i++) {
                         const s = batch.stops[i];
                         coordList.push(`${s.lng},${s.lat}`);
                         
-                        // HIDDEN ROUTE LOGIC: NFA (2) -> IT Park (1)
                         if (parseInt(s.id) === 2 && (i + 1 < batch.stops.length) && parseInt(batch.stops[i+1].id) === 1) {
                             coordList.push("123.90621644479106,10.3273140907822");
                         }
@@ -931,7 +914,6 @@ $mySavedRoutes = $savedObj->getAll($_SESSION['user_id']);
 
         fetchBusStops();
         checkRushHour();
-        // Start locating user in background to show marker
         locateUser();
     </script>
 </body>
