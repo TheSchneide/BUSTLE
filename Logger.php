@@ -1,9 +1,10 @@
 <?php
-class Logger {
-    private $conn;
+include_once 'BaseModel.php';
+
+class Logger extends BaseModel {
 
     public function __construct($db) {
-        $this->conn = $db;
+        parent::__construct($db);
     }
 
     public function log($action, $description) {

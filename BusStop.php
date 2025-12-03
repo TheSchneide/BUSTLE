@@ -1,9 +1,10 @@
 <?php
-class BusStop {
-    private $conn;
+include_once 'BaseModel.php';
+
+class BusStop extends BaseModel {
 
     public function __construct($db) {
-        $this->conn = $db;
+        parent::__construct($db); 
     }
 
     public function getAll() {

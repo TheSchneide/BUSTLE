@@ -1,9 +1,10 @@
 <?php
-class User {
-    private $conn;
+include_once 'BaseModel.php';
+
+class User extends BaseModel { 
 
     public function __construct($db_connection) {
-        $this->conn = $db_connection;
+        parent::__construct($db_connection);
     }
 
     public function register($username, $email, $password, $birthdate) {
